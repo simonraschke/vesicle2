@@ -1,5 +1,5 @@
 /*  
-*   Copyright 2017-2018 Simon Raschke
+*   Copyright 2019 Simon Raschke
 *
 *   Licensed under the Apache License, Version 2.0 (the "License");
 *   you may not use this file except in compliance with the License.
@@ -27,20 +27,23 @@
 
 
 
-namespace ves::Particle
+namespace ves
 { 
-    enum class TYPE : std::int16_t
+    namespace Particle
     {
-        UNDEFINED = -1,
-        MOBILE = 0,
-        FRAME = 1,
-        OSMOTIC = 2
-    };
-    
-    struct Base;
-    struct Mobile;
-    struct Frame;
-    struct Osmotic;
+        enum class TYPE : std::int16_t
+        {
+            UNDEFINED = -1,
+            MOBILE = 0,
+            FRAME = 1,
+            OSMOTIC = 2
+        };
+        
+        struct Base;
+        struct Mobile;
+        struct Frame;
+        struct Osmotic;
+    }
 }
 
 
@@ -60,11 +63,13 @@ protected:
     REAL LJ_attraction_intensity = {1};
     REAL LJ_rejection_intensity = {1};
 
+    // nonstd::observer_ptr<Cell> paren_cell {nullptr};
+
 public:
     virtual ~Base() = default;
     inline virtual Base* getDerived() override { return this; };
 
-    inline constexpr bool operator==(Base& other) const { return std::addressof(*this) == std::addressof(other); };
+    inline bool operator==(Base& other) const { return std::addressof(*this) == std::addressof(other); };
 
     inline virtual auto getTYPE() const -> TYPE = 0;
 

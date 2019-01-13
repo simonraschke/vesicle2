@@ -1,5 +1,5 @@
 /*  
-*   Copyright 2017-2018 Simon Raschke
+*   Copyright 2019 Simon Raschke
 *
 *   Licensed under the Apache License, Version 2.0 (the "License");
 *   you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 
 #include "common/definitions.hpp"
 #include "enhance/singleton.hpp"
+#include "common/global.hpp"
 #include <fstream>
 #include <filesystem>
 #include <boost/program_options.hpp>
@@ -38,8 +39,16 @@ struct ves::Parameters
     
     void read(int, const char* []);
 
-    const auto& getOption(const std::string& s) const { return optionsMap[s]; }
-    const boost::program_options::variables_map & getOptions() const { return optionsMap; }
+    const auto& getOption(const std::string& s) const
+    { 
+        if(optionsMap.count(s))
+            return optionsMap[s]; 
+        else
+            throw std::logic_error("optionsMap does not contain "+s);
+    }
+
+    auto& mutableAccess() { return optionsMap; }
+    const auto& getOptions() const { return optionsMap; }
 
 protected:
     boost::program_options::variables_map optionsMap {};

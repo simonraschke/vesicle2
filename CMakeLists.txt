@@ -17,7 +17,7 @@ add_executable(vesicle ${BASIC_SOURCE})
 
 set_target_properties(vesicle PROPERTIES RUNTIME_OUTPUT_DIRECTORY "~/bin/")
 set_target_properties(vesicle PROPERTIES CXX_STANDARD 17)
-target_compile_options(vesicle PRIVATE -Wall -Wextra -Wpedantic -ferror-limit=2 -march=nocona)
+target_compile_options(vesicle PRIVATE -Wall -Wextra -Wpedantic -ferror-limit=2 -march=nocona -std=c++17)
 
 # Link
 target_link_libraries(vesicle vesicle_lib)

@@ -1,5 +1,5 @@
 /*  
-*   Copyright 2017-2018 Simon Raschke
+*   Copyright 2019 Simon Raschke
 *
 *   Licensed under the Apache License, Version 2.0 (the "License");
 *   you may not use this file except in compliance with the License.
@@ -27,6 +27,11 @@ void ves::Controller::signal(int SIG)
 {
     static std::size_t got_called = 0;
     ++got_called;
+
+    if(SIG == SIGABRT)
+    {
+        std::exit(SIG);
+    }
     
     if(got_called == 1)
     {
@@ -46,4 +51,13 @@ void ves::Controller::signal(int SIG)
 
     tbb::mutex::scoped_lock lock(Controller::signal_mutex);
     SIGNAL.store(SIG);
+}
+
+
+
+void ves::Controller::setup()
+{
+    vesDEBUG(__PRETTY_FUNCTION__);
+    
+    system.setup();
 }

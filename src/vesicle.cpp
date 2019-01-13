@@ -1,5 +1,5 @@
 /*  
-*   Copyright 2017-2018 Simon Raschke
+*   Copyright 2019 Simon Raschke
 *
 *   Licensed under the Apache License, Version 2.0 (the "License");
 *   you may not use this file except in compliance with the License.
@@ -41,9 +41,8 @@ auto main(int argc, const char *argv[]) -> int
     std::signal( SIGKILL, ves::Controller::signal );
     std::signal( SIGTERM, ves::Controller::signal );
 
-    ves::Parameters prms;
-    prms.read(argc,argv);
-    vesDEBUG( prms.getOption("system.time_max").as<float>() );
+    ves::Parameters::getInstance().read(argc,argv);
+    vesDEBUG( ves::Parameters::getInstance().getOption("system.time_max").as<float>() );
 
     // // create a task arena 
     // tbb::task_scheduler_init init(tbb::task_scheduler_init::automatic);
@@ -54,6 +53,9 @@ auto main(int argc, const char *argv[]) -> int
     // control.setParameters(prms);
     // control.setup();
     // control.start();
+
+    ves::Controller controller;
+    controller.setup();
 
     std::vector<std::unique_ptr<ves::Particle::Base>> particles;
     particles.emplace_back(std::make_unique<ves::Particle::Mobile>());

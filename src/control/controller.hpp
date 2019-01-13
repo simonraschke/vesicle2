@@ -1,6 +1,6 @@
 /*  
 *  
-*   Copyright 2017-2018 Simon Raschke
+*   Copyright 2019 Simon Raschke
 *
 *   Licensed under the Apache License, Version 2.0 (the "License");
 *   you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 // #include "systems/system.hpp"
 #include "common/definitions.hpp"
 #include "monte_carlo_system.hpp"
+#include "io/parameters.hpp"
 #include <tbb/mutex.h>
 #include <csignal>
 #include <chrono>
@@ -36,11 +37,9 @@ namespace ves { struct Controller; }
 struct ves::Controller
     // : public ParameterDependentComponent
 {
-
-    // derived MUST contain
     void setup();
     void start();
-    void pause();
+    // void pause();
     
     // static member function to catch signal
     // store in atomic which is accesible by derived
@@ -50,7 +49,7 @@ struct ves::Controller
 protected:
 
     // the actual system
-    ves::MonteCarloSystem system {};
+    ves::MonteCarloSystem system;
 
     // signal handling
     static tbb::mutex signal_mutex;

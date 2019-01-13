@@ -1,5 +1,5 @@
 /*  
-*   Copyright 2017-2018 Simon Raschke
+*   Copyright 2019 Simon Raschke
 *
 *   Licensed under the Apache License, Version 2.0 (the "License");
 *   you may not use this file except in compliance with the License.
@@ -17,17 +17,24 @@
 #pragma once
 
 #include "common/definitions.hpp"
-#include <memory>
-#include <vector>
-#include <algorithm>
+#include "particles/particle_container.hpp"
+#include "algorithm/cell_container.hpp"
 
 
-namespace ves { class MonteCarloSystem; }
+namespace ves { struct MonteCarloSystem; }
 
 
 
-class ves::MonteCarloSystem
-    // : public Box<PERIODIC::ON>
+struct ves::MonteCarloSystem
+
 {
+    void setup();
+    void run();
 
+    std::size_t time {0};
+protected:
+    ves::CellContainer cells;
+    ves::ParticleContainer particles;
+
+    ves::Box<PERIODIC::ON> box;
 };

@@ -1,5 +1,5 @@
 /*  
-*   Copyright 2017-2018 Simon Raschke
+*   Copyright 2019 Simon Raschke
 *
 *   Licensed under the Apache License, Version 2.0 (the "License");
 *   you may not use this file except in compliance with the License.
@@ -19,8 +19,11 @@
 #include "parameters.hpp"
 
 
+
 void ves::Parameters::read(int argc, const char* argv[])
 {
+    vesDEBUG(__PRETTY_FUNCTION__);
+    
     namespace po = boost::program_options;
 
     optionsMap.clear();
@@ -109,6 +112,36 @@ void ves::Parameters::read(int argc, const char* argv[])
             std::exit(EXIT_FAILURE);
         }
     }
+
+
+    ves::GLOBAL::getInstance().simulationstatus = ves::GLOBAL::SIMULATIONSTATUS::PREPARATION;
+    ves::GLOBAL::getInstance().acceptance = ves::GLOBAL::ACCEPTANCE::METROPOLIS;
+
+
+    if(getOption("general.ensemble").as<std::string>() == "NVT")
+        ves::GLOBAL::getInstance().ensemble = ves::GLOBAL::ENSEMBLE::NVT;
+    else if(getOption("general.ensemble").as<std::string>() == "uVT")
+        ves::GLOBAL::getInstance().ensemble = ves::GLOBAL::ENSEMBLE::NVT;
+    else
+        vesWARNING("unable to get general.ensemble, setting to NVT");
+
+
+    if(getOption("general.fga_mode").as<std::string>() == "sphere")
+        ves::GLOBAL::getInstance().fgamode = ves::GLOBAL::FGAMODE::SPHERE;
+    else if(getOption("general.fga_mode").as<std::string>() == "plane")
+        ves::GLOBAL::getInstance().fgamode = ves::GLOBAL::FGAMODE::PLANE;
+    else
+        vesWARNING("unable to get general.fga_mode, setting to plane");
+
+
+    if(getOption("general.simulation_mode").as<std::string>() == "SA")
+        ves::GLOBAL::getInstance().simulationmode = ves::GLOBAL::SIMULATIONMODE::SA;
+    else if(getOption("general.simulation_mode").as<std::string>() == "FGA")
+        ves::GLOBAL::getInstance().simulationmode = ves::GLOBAL::SIMULATIONMODE::FGA;
+    else if(getOption("general.simulation_mode").as<std::string>() == "OSMOTIC")
+        ves::GLOBAL::getInstance().simulationmode = ves::GLOBAL::SIMULATIONMODE::OSMOTIC;
+    else
+        vesWARNING("unable to get general.simulation_mode, setting to self assembly");
 }
 
 
@@ -120,7 +153,6 @@ void ves::Parameters::read_from_file(boost::program_options::options_description
     IFSTREAM INPUT( vm["config"].as<PATH>() );
     
     vm.clear();
-
     
     po::store(po::parse_config_file(INPUT,desc),vm);
     po::notify(vm);

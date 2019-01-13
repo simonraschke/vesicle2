@@ -1,5 +1,5 @@
 /*  
-*   Copyright 2017-2018 Simon Raschke
+*   Copyright 2019 Simon Raschke
 *
 *   Licensed under the Apache License, Version 2.0 (the "License");
 *   you may not use this file except in compliance with the License.
@@ -16,19 +16,27 @@
 
 #pragma once
 
+#include "io/parameters.hpp"
+#include "particles/base.hpp"
+#include "enhance/random.hpp"
+#include <memory>
 #if __has_include(<Eigen/Core>)
 #include <Eigen/Geometry>
 #elif __has_include(<eigen3/Eigen/Core>)
 #include <eigen3/Eigen/Geometry>
 #endif
 
-#include <memory>
-#include "particles/particle.hpp"
-#include "vesicleIO/parameters.hpp"
 
 
+namespace ves {
+    enum class PERIODIC : bool 
+    { 
+        ON=true, 
+        OFF=false}
+    ;
 
-enum class PERIODIC : bool { ON=true, OFF=false};
+    template<PERIODIC P> class Box;
+};
 
 
 
@@ -38,134 +46,137 @@ enum class PERIODIC : bool { ON=true, OFF=false};
 //
 // may eiter be PERIODIC::ON to calculate with periodic boundary conditions
 // or may be PERIODIC::OFF to caclulate without periodic boundary conditions
+namespace ves{
 template<PERIODIC P>
 class Box
-    : virtual public ParameterDependentComponent
 {
 public:
-    typedef Particle::real real;
-    typedef Particle::cartesian cartesian;
+    typedef Eigen::Matrix<REAL,3,1> cartesian;
 
     // set x by mutableAccess to Parameter base class
-    void setLengthX(real);
+    void setLengthX(REAL);
 
     // set y by mutableAccess to Parameter base class
-    void setLengthY(real);
+    void setLengthY(REAL);
 
     // set z by mutableAccess to Parameter base class
-    void setLengthZ(real);
+    void setLengthZ(REAL);
 
-    real getLengthX() const;
-    real getLengthY() const;
-    real getLengthZ() const;
+    REAL getLengthX() const;
+    REAL getLengthY() const;
+    REAL getLengthZ() const;
 
     cartesian getCenter() const;
 
-    // calcaulates the distance vector of two particles
+    // calcaulates the distance vector of two ves::Particle::Bases
     // depending on PERIODIC ON or OFF
     // called from anywhere else
     cartesian distanceVector(const cartesian&, const cartesian&) const;
-    // implementation for Particle base class. calls cartesian version
-    cartesian distanceVector(const Particle&, const Particle&) const;
+    // implementation for ves::Particle::Base base class. calls cartesian version
+    cartesian distanceVector(const ves::Particle::Base&, const ves::Particle::Base&) const;
 
 
     // distance
     // calls squared_distance and calculates std::sqrt
-    real distance(const cartesian&, const cartesian&) const;
-    // implementation for Particle base class. calls cartesian version
-    real distance(const Particle&, const Particle&) const;
+    REAL distance(const cartesian&, const cartesian&) const;
+    // implementation for ves::Particle::Base base class. calls cartesian version
+    REAL distance(const ves::Particle::Base&, const ves::Particle::Base&) const;
 
 
     // squared distance
-    real squared_distance(const cartesian&, const cartesian&) const;
-    // implementation for Particle base class. calls cartesian version
-    real squared_distance(const Particle&, const Particle&) const;
+    REAL squared_distance(const cartesian&, const cartesian&) const;
+    // implementation for ves::Particle::Base base class. calls cartesian version
+    REAL squared_distance(const ves::Particle::Base&, const ves::Particle::Base&) const;
 
 
     // scales down any give coordinates into the simulation box
     cartesian scaleDown(cartesian) const ;
-    // implementation for Particle base class. calls cartesian version
-    cartesian scaleDown(const Particle&) const;
+    // implementation for ves::Particle::Base base class. calls cartesian version
+    cartesian scaleDown(const ves::Particle::Base&) const;
 
 
     // scales down any give coordinates into the simulation box
     // VMD simulation box is from -x/2 to x/2
     // scales accordingly
     cartesian scaleDownForVMD(cartesian) const ;
-    // implementation for Particle base class. calls cartesian version
-    cartesian scaleDownForVMD(const Particle&) const;
+    // implementation for ves::Particle::Base base class. calls cartesian version
+    cartesian scaleDownForVMD(const ves::Particle::Base&) const;
 
     // checks if bounding_box contains coordinates
     // if PERIODIC::ON calls scaleDown before
     bool contains(const cartesian&) const;
-    // implementation for Particle base class. calls cartesian version
-    bool contains(const Particle&) const;
+    // implementation for ves::Particle::Base base class. calls cartesian version
+    bool contains(const ves::Particle::Base&) const;
 
 
     // destroy if derived is destroyed
     virtual ~Box() = default;
 
     // check if all parameters are set to make bounding_box
-    // necessary for contains(const Particle&)
+    // necessary for contains(const ves::Particle::Base&)
     void check_for_aligned_box_setup();
 
+    cartesian randomPointInside() const;
+
 protected:
-    using ParameterDependentComponent::mutableAccess;
 
 private:
+    REAL x {0};
+    REAL y {0};
+    REAL z {0};
 
-    std::unique_ptr<Eigen::AlignedBox<real,3>> bounding_box {nullptr};
+    std::unique_ptr<Eigen::AlignedBox<REAL,3>> bounding_box {nullptr};
 };
 
 
 
 template<PERIODIC P>
-void Box<P>::setLengthX(real l)
+void Box<P>::setLengthX(REAL l)
 {
-    mutableAccess().x = l;
+    x = l;
     check_for_aligned_box_setup();
 }
 
 
 
 template<PERIODIC P>
-void Box<P>::setLengthY(real l)
+void Box<P>::setLengthY(REAL l)
 {
-    mutableAccess().y = l;
+    y = l;
     check_for_aligned_box_setup();
 }
 
 
 
 template<PERIODIC P>
-void Box<P>::setLengthZ(real l)
+void Box<P>::setLengthZ(REAL l)
 {
-    mutableAccess().z = l;
+    z = l;
     check_for_aligned_box_setup();
 }
 
 
 
 template<PERIODIC P>
-typename Box<P>::real Box<P>::getLengthX() const
+REAL Box<P>::getLengthX() const
 {
-    return getParameters().x;
+    return x;
 }
 
 
 
 template<PERIODIC P>
-typename Box<P>::real Box<P>::getLengthY() const
+REAL Box<P>::getLengthY() const
 {
-    return getParameters().x;
+    return x;
 }
 
 
 
 template<PERIODIC P>
-typename Box<P>::real Box<P>::getLengthZ() const
+REAL Box<P>::getLengthZ() const
 {
-    return getParameters().z;
+    return z;
 }
 
 
@@ -182,11 +193,8 @@ template<PERIODIC P>
 void Box<P>::check_for_aligned_box_setup()
 {
     bounding_box.reset(nullptr);
-    cartesian vec;
-    vec(0) = getParameters().x;
-    vec(1) = getParameters().y;
-    vec(2) = getParameters().z;
-    bounding_box = std::make_unique<Eigen::AlignedBox<real,3>>( cartesian::Zero(), vec );
+    cartesian vec (x,y,z);
+    bounding_box = std::make_unique<Eigen::AlignedBox<REAL,3>>( cartesian::Zero(), vec );
 }
 
 
@@ -195,9 +203,9 @@ template<>
 EIGEN_STRONG_INLINE Box<PERIODIC::ON>::cartesian Box<PERIODIC::ON>::distanceVector(const cartesian& c1, const cartesian& c2) const
 {
     cartesian distance_cartesian = c2-c1;
-    distance_cartesian(0) = distance_cartesian(0) - getParameters().x * std::round(distance_cartesian(0)/(getParameters().x));
-    distance_cartesian(1) = distance_cartesian(1) - getParameters().y * std::round(distance_cartesian(1)/(getParameters().y));
-    distance_cartesian(2) = distance_cartesian(2) - getParameters().z * std::round(distance_cartesian(2)/(getParameters().z));
+    distance_cartesian(0) = distance_cartesian(0) - x * std::round(distance_cartesian(0)/(x));
+    distance_cartesian(1) = distance_cartesian(1) - y * std::round(distance_cartesian(1)/(y));
+    distance_cartesian(2) = distance_cartesian(2) - z * std::round(distance_cartesian(2)/(z));
     return distance_cartesian;
 }
 
@@ -212,15 +220,15 @@ EIGEN_STRONG_INLINE Box<PERIODIC::OFF>::cartesian Box<PERIODIC::OFF>::distanceVe
 
 
 template<PERIODIC P>
-EIGEN_STRONG_INLINE typename Box<P>::cartesian Box<P>::distanceVector(const Particle&p1, const Particle& p2) const
+EIGEN_STRONG_INLINE typename Box<P>::cartesian Box<P>::distanceVector(const ves::Particle::Base& p1, const ves::Particle::Base& p2) const
 {
-    return distanceVector(p1.coords(),p2.coords());
+    return distanceVector(p1.getCoordinates(),p2.getCoordinates());
 }
 
 
 
 template<PERIODIC P>
-EIGEN_STRONG_INLINE typename Box<P>::real Box<P>::squared_distance(const cartesian& c1, const cartesian& c2) const 
+EIGEN_STRONG_INLINE REAL Box<P>::squared_distance(const cartesian& c1, const cartesian& c2) const 
 {
     return distanceVector(c1,c2).squaredNorm();
 }
@@ -228,15 +236,15 @@ EIGEN_STRONG_INLINE typename Box<P>::real Box<P>::squared_distance(const cartesi
 
 
 template<PERIODIC P>
-EIGEN_STRONG_INLINE typename Box<P>::real Box<P>::squared_distance(const Particle& p1, const Particle& p2) const 
+EIGEN_STRONG_INLINE REAL Box<P>::squared_distance(const ves::Particle::Base& p1, const ves::Particle::Base& p2) const 
 {
-    return squared_distance(p1.coords(),p2.coords());
+    return squared_distance(p1.getCoordinates(),p2.getCoordinates());
 }
 
 
 
 template<PERIODIC P>
-EIGEN_STRONG_INLINE typename Box<P>::real Box<P>::distance(const cartesian& c1, const cartesian& c2) const 
+EIGEN_STRONG_INLINE REAL Box<P>::distance(const cartesian& c1, const cartesian& c2) const 
 {
     return std::sqrt(squared_distance(c1,c2));
 }
@@ -244,9 +252,9 @@ EIGEN_STRONG_INLINE typename Box<P>::real Box<P>::distance(const cartesian& c1, 
 
 
 template<PERIODIC P>
-EIGEN_STRONG_INLINE typename Box<P>::real Box<P>::distance(const Particle& p1, const Particle& p2) const 
+EIGEN_STRONG_INLINE REAL Box<P>::distance(const ves::Particle::Base& p1, const ves::Particle::Base& p2) const 
 {
-    return distance(p1.coords(),p2.coords());
+    return distance(p1.getCoordinates(),p2.getCoordinates());
 }
 
 
@@ -254,22 +262,22 @@ EIGEN_STRONG_INLINE typename Box<P>::real Box<P>::distance(const Particle& p1, c
 template<PERIODIC P>
 typename Box<P>::cartesian Box<P>::scaleDown(cartesian c) const 
 {
-    while( c(0) > getParameters().x ) c(0) -= getParameters().x;
-    while( c(1) > getParameters().y ) c(1) -= getParameters().y;
-    while( c(2) > getParameters().z ) c(2) -= getParameters().z;
+    while( c(0) > x ) c(0) -= x;
+    while( c(1) > y ) c(1) -= y;
+    while( c(2) > z ) c(2) -= z;
 
-    while( c(0) < 0.f ) c(0) += getParameters().x;
-    while( c(1) < 0.f ) c(1) += getParameters().y;
-    while( c(2) < 0.f ) c(2) += getParameters().z;
+    while( c(0) < 0.f ) c(0) += x;
+    while( c(1) < 0.f ) c(1) += y;
+    while( c(2) < 0.f ) c(2) += z;
     return c;
 }
 
 
 
 template<PERIODIC P>
-typename Box<P>::cartesian Box<P>::scaleDown(const Particle& p) const 
+typename Box<P>::cartesian Box<P>::scaleDown(const ves::Particle::Base& p) const 
 {
-    return scaleDown(p.coords());
+    return scaleDown(p.getCoordinates());
 }
 
 
@@ -277,18 +285,18 @@ typename Box<P>::cartesian Box<P>::scaleDown(const Particle& p) const
 template<PERIODIC P>
 typename Box<P>::cartesian Box<P>::scaleDownForVMD(cartesian c) const 
 {
-    c(0) = c(0) - getParameters().x * std::round(c(0)/(getParameters().x));
-    c(1) = c(1) - getParameters().y * std::round(c(1)/(getParameters().y));
-    c(2) = c(2) - getParameters().z * std::round(c(2)/(getParameters().z));
+    c(0) = c(0) - x * std::round(c(0)/(x));
+    c(1) = c(1) - y * std::round(c(1)/(y));
+    c(2) = c(2) - z * std::round(c(2)/(z));
     return c;
 }
 
 
 
 template<PERIODIC P>
-typename Box<P>::cartesian Box<P>::scaleDownForVMD(const Particle& p) const 
+typename Box<P>::cartesian Box<P>::scaleDownForVMD(const ves::Particle::Base& p) const 
 {
-    return scaleDownForVMD(p.coords());
+    return scaleDownForVMD(p.getCoordinates());
 }
 
 
@@ -312,7 +320,22 @@ inline bool Box<PERIODIC::OFF>::contains(const cartesian& c) const
 
 
 template<PERIODIC P>
-inline bool Box<P>::contains(const Particle& p) const 
+inline bool Box<P>::contains(const ves::Particle::Base& p) const 
 {
-    return contains(p.coords());
+    return contains(p.getCoordinates());
 }
+
+
+
+template<PERIODIC P>
+EIGEN_STRONG_INLINE typename Box<P>::cartesian Box<P>::randomPointInside() const 
+{
+    return cartesian
+    (
+        enhance::random<cartesian::Scalar>(0.f,getLengthX()),
+        enhance::random<cartesian::Scalar>(0.f,getLengthY()),
+        enhance::random<cartesian::Scalar>(0.f,getLengthZ())
+    );
+}
+
+}; // namespace ves
