@@ -1,0 +1,4 @@
+[submodule "lib/h5xx"]
+	path = lib/h5xx
+	url = https://github.com/fhoefling/h5xx.git
+	branch = master
