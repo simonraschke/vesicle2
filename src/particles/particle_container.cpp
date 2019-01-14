@@ -68,6 +68,7 @@ void ves::ParticleContainer::setup()
                     data.back()->try_setCoordinates(box.randomPointInside());
                 }
                 while(placement_conflict(*(data.back()), minimum_offset));
+                data.back()->try_setOrientation(ves::Particle::Base::cartesian::Random().normalized());
                 // vesLOG("placed particle: " << data.back()->getCoordinates().format(ROWFORMAT));
             }
             

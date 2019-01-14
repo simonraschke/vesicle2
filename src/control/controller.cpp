@@ -61,3 +61,10 @@ void ves::Controller::setup()
     
     system.setup();
 }
+
+
+void ves::Controller::start()
+{
+    vesDEBUG(__PRETTY_FUNCTION__);
+    system.run();
+}

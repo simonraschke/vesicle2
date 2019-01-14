@@ -21,7 +21,9 @@
 
 
 #include "cell.hpp"
-// #include <tbb/concurrent_vector.h>
+#include "enhance/random.hpp"
+#include "enhance/iterator_utility.hpp"
+#include "enhance/parallel.hpp"
 #include <tbb/parallel_for_each.h>
 
 
@@ -37,6 +39,12 @@ struct ves::CellContainer
     using particle_t = Cell::particle_t;
 
     void setup();
+    void reorder();
+    void preparation();
+    std::size_t membersContained() const;
+
+    template<typename FUNCTOR>
+    void cellBasedApplyFunctor(FUNCTOR&& func);
 
     template<typename CONTAINER>
     void deployParticles(const CONTAINER&);
@@ -48,6 +56,7 @@ struct ves::CellContainer
 
     template<CellState::STATE S>
     bool noneInState() const;
+
 
 protected:
     ves::Box<PERIODIC::ON> box;
@@ -87,4 +96,45 @@ void ves::CellContainer::deployParticles(const CONTAINER& particles)
         });
         assert(done);
     });
+}
+
+
+
+template<typename FUNCTOR>
+void ves::CellContainer::cellBasedApplyFunctor(FUNCTOR&& func)
+{
+    // vesDEBUG(__PRETTY_FUNCTION__)
+    enhance::scoped_root_dummy ROOT;
+
+    while( ! (allInState<CellState::STATE::FINISHED>()) )
+    {
+        enhance::for_each_from(
+            begin(), 
+            end(),
+            begin() + enhance::random<std::size_t>(0, data.size()-1), 
+            [&](Cell& cell)
+        {
+            if( 
+                cell.regionNoneInState<CellState::STATE::BLOCKED>() && 
+                cell.state == CellState::STATE::IDLE
+            )
+            {
+                cell.state = CellState::STATE::BLOCKED;
+                
+                assert( cell.state == CellState::STATE::BLOCKED );
+                assert( cell.proximityNoneInState<CellState::STATE::BLOCKED>() );
+                
+                ROOT.enqueue_child( [&]
+                {
+                    assert( cell.state == CellState::STATE::BLOCKED );
+                    func( cell ); 
+                    cell.state = CellState::STATE::FINISHED;
+                    assert( cell.state == CellState::STATE::FINISHED );
+                } );
+            }
+        });
+    }
+    
+    vesDEBUG("now check if all are FINISHED");
+    assert( allInState<CellState::STATE::FINISHED>() );
 }

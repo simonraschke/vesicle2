@@ -25,7 +25,7 @@ void ves::CellContainer::setup()
     box.setLengthY(Parameters::getInstance().getOption("system.box.y").as<REAL>());
     box.setLengthZ(Parameters::getInstance().getOption("system.box.z").as<REAL>());
 
-    const float min_edge = Parameters::getInstance().getOption("system.cell_min_edge").as<REAL>();
+    const REAL min_edge = Parameters::getInstance().getOption("system.cell_min_edge").as<REAL>();
     const std::size_t max_cells_dim = Parameters::getInstance().getOption("system.max_cells_dim").as<std::size_t>();
 
     vesDEBUG("box x y z: " << box.getLengthX()  << " " << box.getLengthY()  << " " << box.getLengthZ())
@@ -46,14 +46,8 @@ void ves::CellContainer::setup()
     const float x_edge = box.getLengthX()/cells_x;
     const float y_edge = box.getLengthY()/cells_y;
     const float z_edge = box.getLengthZ()/cells_z;
-
-    // vesDEBUG("cells in x dimension: " << cells_x << " with edge: " << x_edge)
-    // vesDEBUG("cells in y dimension: " << cells_y << " with edge: " << y_edge)
-    // vesDEBUG("cells in z dimension: " << cells_z << " with edge: " << z_edge)
-    // vesDEBUG("cells overall: " << cells_x*cells_y*cells_z)
     
     vesLOG("building cell environment " << cells_x << " " << cells_y << " " << cells_z)
-    // cells.resize(cells_x*cells_y*cells_z);
     for ( std::size_t x = 0; x < cells_x; ++x ) 
     for ( std::size_t y = 0; y < cells_y; ++y )
     for ( std::size_t z = 0; z < cells_z; ++z )
@@ -81,4 +75,58 @@ void ves::CellContainer::setup()
         assert(cell.state == CellState::STATE::IDLE);
     });
     #endif
+}
+
+
+
+void ves::CellContainer::reorder()
+{
+    tbb::parallel_for_each(begin(), end(), [&](Cell& cell)
+    {
+        auto leavers = cell.getLeavers();
+        vesDEBUG("cell got "<< leavers.size() << " leaver");
+        
+        for(auto& leaver : leavers)
+        {
+            bool was_added = false;
+            for(Cell& proximity_cell : cell.getProximity())
+            {
+                was_added = proximity_cell.try_add(leaver.get());
+                if(was_added) 
+                {
+                    vesDEBUG("leaver " << leaver->getCoordinates().format(ROWFORMAT) << " DID fit into cell with bounds from" << proximity_cell.getBoundaries().corner(Particle::Base::box3d::BottomLeftFloor).format(ROWFORMAT) << " to " <<  proximity_cell.getBoundaries().corner(Particle::Base::box3d::TopRightCeil).format(ROWFORMAT));
+                    break;
+                }
+                vesDEBUG("leaver " << leaver->getCoordinates().format(ROWFORMAT) << " DID NOT fit into cell with bounds from " << proximity_cell.getBoundaries().corner(Particle::Base::box3d::BottomLeftFloor).format(ROWFORMAT) << " to " <<  proximity_cell.getBoundaries().corner(Particle::Base::box3d::TopRightCeil).format(ROWFORMAT));
+            }
+            // if(!was_added)
+            // {
+            //     for(Cell& other : data)
+            //     {
+            //         was_added = other.try_add(leaver.get());
+            //         if(was_added) break;
+            //     }
+            // }
+            assert(was_added);
+            cell.removeParticle(*leaver);
+            assert(!cell.contains(*leaver));
+        }
+    });
+}
+
+
+
+void ves::CellContainer::preparation()
+{
+    tbb::parallel_for_each(begin(), end(), [](Cell& cell)
+    {
+        cell.state = CellState::STATE::IDLE;
+    });
+}
+
+
+
+std::size_t ves::CellContainer::membersContained() const
+{
+    return std::accumulate(begin(), end(), std::size_t(0), [](auto i, const Cell& cell){ return i + cell.data.size(); });
 }

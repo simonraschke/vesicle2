@@ -26,7 +26,9 @@
 #include "enhance/container_class_base.hpp"
 #include "observer_ptr.hpp"
 #include "common/box.hpp"
+#include "particles/interaction.hpp"
 #include <deque>
+#include <numeric>
 #include <tbb/spin_rw_mutex.h>
 #include <tbb/concurrent_vector.h>
 
@@ -48,11 +50,16 @@ public:
 protected:
     tbb::spin_rw_mutex particles_access_mutex {};
     box3d bounding_box;
+    
+    ves::Box<PERIODIC::ON> box;
+    AngularLennardJonesInteraction interaction;
 
-    tbb::concurrent_vector<std::reference_wrapper<Cell>> proximity {};
-    tbb::concurrent_vector<std::reference_wrapper<Cell>> region {};
+    std::vector<std::reference_wrapper<Cell>> proximity {};
+    std::vector<std::reference_wrapper<Cell>> region {};
 
 public:
+    Cell();
+
     inline bool operator==(const Cell& other) const { return std::addressof(*this) == std::addressof(other); }
     static bool areNeighbours(const Cell&, const Cell&);
 
@@ -63,7 +70,7 @@ public:
     void removeParticle(const particle_t&);
     bool try_add(particle_t*);
     auto getLeavers() -> decltype(data);
-
+    REAL potential(const particle_t&) const;
     bool contains(const cartesian&) const;
     bool contains(const particle_t&);
 

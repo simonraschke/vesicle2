@@ -56,11 +56,11 @@ void ves::Parameters::read(int argc, const char* argv[])
         ("system.box.y", po::value<float>(), "box edge y")
         ("system.box.z", po::value<float>(), "box edge z")
         ("system.temperature,t", po::value<float>(), "temperature")
-        ("system.time_max", po::value<float>()->default_value(FLT_MAX), "time step")
+        ("system.time_max", po::value<std::size_t>()->default_value(std::numeric_limits<std::size_t>::max()), "time step")
         ("system.ljepsilon,k", po::value<float>()->default_value(1.0), "kappa")
         ("system.ljsigma,k", po::value<float>()->default_value(1.0), "kappa")
         ("system.kappa,k", po::value<float>()->default_value(1.0), "kappa")
-        ("system.gamma,g", po::value<float>()->default_value(10), "gamma angle")
+        ("system.gamma,g", po::value<float>()->default_value(11), "gamma angle")
 
         ("system.sw_position_min", po::value<float>()->default_value(0.05), "position stepwidth min (MonteCarlo only)")
         ("system.sw_position_max", po::value<float>()->default_value(1.0), "position stepwidth min (MonteCarlo only)")
@@ -113,9 +113,16 @@ void ves::Parameters::read(int argc, const char* argv[])
         }
     }
 
+    std::map<std::string, po::variable_value>& m = optionsMap;
+    m["system.gamma"] = po::variable_value(enhance::deg_to_rad(optionsMap["system.gamma"].as<REAL>()), false);    
 
     ves::GLOBAL::getInstance().simulationstatus = ves::GLOBAL::SIMULATIONSTATUS::PREPARATION;
     ves::GLOBAL::getInstance().acceptance = ves::GLOBAL::ACCEPTANCE::METROPOLIS;
+
+    if(std::filesystem::exists(getOption("input.path").as<PATH>()))
+        ves::GLOBAL::getInstance().startmode = ves::GLOBAL::STARTMODE::RESTART;
+    else
+        ves::GLOBAL::getInstance().startmode = ves::GLOBAL::STARTMODE::NEW;
 
 
     if(getOption("general.ensemble").as<std::string>() == "NVT")

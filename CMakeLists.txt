@@ -11,6 +11,10 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 add_subdirectory(lib)
 add_subdirectory(src)
 
+set(CMAKE_CXX_FLAGS_DEBUG "-Og -g3 -ggdb -D_DEBUG -DDEBUG")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g1 -ggdb -DNDEBUG -DEIGEN_NO_DEBUG -ffast-math")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g0 -DNDEBUG -DEIGEN_NO_DEBUG -ffast-math")
+
 ### vesicle
 set(BASIC_SOURCE src/vesicle.cpp)
 add_executable(vesicle ${BASIC_SOURCE})

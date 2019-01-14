@@ -19,6 +19,12 @@
 #include "common/definitions.hpp"
 #include "particles/particle_container.hpp"
 #include "algorithm/cell_container.hpp"
+#include "algorithm/metropolis.hpp"
+#include "particles/interaction.hpp"
+#include "stepwidth_alignment_unit.hpp"
+#include "io/parameters.hpp"
+#include "io/trajectory_writer_gro.hpp"
+
 
 
 namespace ves { struct MonteCarloSystem; }
@@ -26,15 +32,37 @@ namespace ves { struct MonteCarloSystem; }
 
 
 struct ves::MonteCarloSystem
-
 {
+    MonteCarloSystem();
+
     void setup();
     void run();
+    REAL potential() const;
+    
+    inline auto getTime() const { return time; }
+    inline auto getParticles() const { return std::cref(particles); }
+    inline auto getBox() const { return std::cref(box); }
 
-    std::size_t time {0};
 protected:
+    std::size_t time {0};
+    const std::size_t time_max;
+    const std::size_t output_skip;
+    
+    void cellStep(const ves::Cell&);
+
     ves::CellContainer cells;
     ves::ParticleContainer particles;
+    std::unique_ptr<ves::AngularLennardJonesInteraction> interaction {nullptr};
+
+    ves::StepwidhtAlignmentUnit sw_position;
+    ves::StepwidhtAlignmentUnit sw_orientation;
+
+    ves::MetropolisAcceptance acceptance;
 
     ves::Box<PERIODIC::ON> box;
+    ves::TrajectoryWriterGro traj_gro;
 };
+
+
+
+#include "control/controller.hpp"

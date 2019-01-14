@@ -44,8 +44,9 @@ protected:
     std::unique_ptr<Eigen::Matrix<REAL,3,1>> origin {nullptr};
 
 public:
+
     virtual ~Bounding() = default;
-    virtual bool isAllowed(const Eigen::Matrix<REAL,3,1>&) = 0;
+    virtual bool isAllowed(const decltype(origin)::element_type&) = 0;
 };
 
 
@@ -53,11 +54,24 @@ public:
 struct ves::OrientationBounding
     : public Bounding
 {
-    float value = TWOPI;
+    REAL value = TWOPI;
 
-    inline virtual bool isAllowed(const Eigen::Matrix<REAL,3,1>& compare) override
+    inline virtual bool isAllowed(const decltype(origin)::element_type& compare) override
     {
-        return std::acos(compare.normalized().dot(origin->normalized())) < value; 
+        if(!origin)
+        {
+            origin = std::make_unique<decltype(origin)::element_type>(compare);
+            return true;
+        }
+        else
+        {
+            const bool allowed = std::acos(compare.normalized().dot(origin->normalized())) < value; 
+            if(allowed)
+            {
+                origin = std::make_unique<decltype(origin)::element_type>(compare);
+            }
+            return allowed;
+        }
     };
 };
 
@@ -66,30 +80,55 @@ struct ves::OrientationBounding
 struct ves::CoordinatesBounding
     : public Bounding
 {
-    inline virtual bool isAllowed(const Eigen::Matrix<REAL,3,1> & compare) override
+    inline virtual bool isAllowed(const decltype(origin)::element_type& compare) override
     {
         if(!origin)
         {
-            origin = std::make_unique<Eigen::Matrix<REAL,3,1>>(compare);
-        }
-
-        if(bounding_box)
-        {
-            return bounding_box->contains(compare);
-        }
-        else if(sphere_bounds)
-        {
-            const auto offset = (compare - (*origin)).norm();
-            return offset >= sphere_bounds->first && offset <= sphere_bounds->second;
-        }
-        else if(!bounding_box && !sphere_bounds)
-        {
-            return true;
+            bool allowed = false;
+            if(bounding_box)
+            {
+                allowed = bounding_box->contains(compare);
+            }
+            else if(sphere_bounds)
+            {
+                const auto offset = (compare - (*origin)).norm();
+                allowed = offset >= sphere_bounds->first && offset <= sphere_bounds->second;
+            }
+            else if(!bounding_box && !sphere_bounds)
+            {
+                allowed = true;
+            }
+            else
+            {
+                vesCRITICAL(__PRETTY_FUNCTION__ << " bad decision");
+                allowed = false;
+            }
+            
+            if(allowed)
+                origin = std::make_unique<decltype(origin)::element_type>(compare);
+            
+            return allowed;
         }
         else
         {
-            vesCRITICAL(__PRETTY_FUNCTION__ << " bad decision");
-            return false;
+            if(bounding_box)
+            {
+                return bounding_box->contains(compare);
+            }
+            else if(sphere_bounds)
+            {
+                const auto offset = (compare - (*origin)).norm();
+                return offset >= sphere_bounds->first && offset <= sphere_bounds->second;
+            }
+            else if(!bounding_box && !sphere_bounds)
+            {
+                return true;
+            }
+            else
+            {
+                vesCRITICAL(__PRETTY_FUNCTION__ << " bad decision");
+                return false;
+            }
         }
     };
 

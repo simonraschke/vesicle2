@@ -20,6 +20,7 @@
 
 #include "common/definitions.hpp"
 #include "enhance/singleton.hpp"
+#include "enhance/math_utility.hpp"
 #include "common/global.hpp"
 #include <fstream>
 #include <filesystem>

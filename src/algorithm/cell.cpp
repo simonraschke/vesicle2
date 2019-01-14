@@ -20,6 +20,15 @@
 
 
 
+ves::Cell::Cell()
+{
+    box.setLengthX(Parameters::getInstance().getOption("system.box.x").as<REAL>());
+    box.setLengthY(Parameters::getInstance().getOption("system.box.y").as<REAL>());
+    box.setLengthZ(Parameters::getInstance().getOption("system.box.z").as<REAL>());
+}
+
+
+
 
 bool ves::Cell::areNeighbours(const Cell& a, const Cell& b)
 {
@@ -59,6 +68,7 @@ void ves::Cell::setBoundaries(const cartesian& from, const cartesian& to)
     bounding_box.setEmpty();
     bounding_box.extend(from);
     bounding_box.extend(to);
+    vesDEBUG("cell boundaries were set from " << from.format(ROWFORMAT) << " to " << to.format(ROWFORMAT));
 }
 
 
@@ -94,7 +104,7 @@ void ves::Cell::removeParticle(const particle_t& to_remove)
 
 bool ves::Cell::try_add(particle_t* particle)
 {
-    if(!contains(*particle) && contains(particle->getCoordinates()))
+    if(!contains(*particle) && contains(box.scaleDown(particle->getCoordinates())))
     {   
         tbb::spin_rw_mutex::scoped_lock lock(particles_access_mutex, true);
         data.emplace_back(nonstd::make_observer<particle_t>(particle));
@@ -115,7 +125,7 @@ bool ves::Cell::try_add(particle_t* particle)
 
 bool ves::Cell::contains(const cartesian& c) const
 {
-    return bounding_box.contains(c);
+    return bounding_box.contains(box.scaleDown(c));
 }
 
 
@@ -143,3 +153,15 @@ auto ves::Cell::getLeavers() -> decltype(data)
     return leavers;
 }
 
+
+
+REAL ves::Cell::potential(const particle_t& particle) const 
+{
+    return std::accumulate(std::begin(region), std::end(region), REAL(0), [&](REAL __val, const auto& cell)
+    {
+        return __val + std::accumulate(std::begin(cell.get()), std::end(cell.get()), REAL(0), [&](REAL _val, const auto& compare)
+        {
+            return particle == *compare ? _val : _val + interaction.calculate(particle, *compare);
+        });
+    });
+}

@@ -71,7 +71,7 @@ public:
 
     inline bool operator==(Base& other) const { return std::addressof(*this) == std::addressof(other); };
 
-    inline virtual auto getTYPE() const -> TYPE = 0;
+    inline virtual auto getType() const -> TYPE = 0;
 
     auto getCoordinates() -> decltype(coordinates)&;
     auto getCoordinates() const -> const decltype(coordinates)&;
@@ -90,4 +90,6 @@ public:
     
     virtual void try_setCoordinates(const cartesian&);
     virtual void try_setOrientation(const cartesian&);
+
+    virtual std::string getName() const = 0;
 };

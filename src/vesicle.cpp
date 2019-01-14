@@ -42,25 +42,23 @@ auto main(int argc, const char *argv[]) -> int
     std::signal( SIGTERM, ves::Controller::signal );
 
     ves::Parameters::getInstance().read(argc,argv);
-    vesDEBUG( ves::Parameters::getInstance().getOption("system.time_max").as<float>() );
+    vesDEBUG( ves::Parameters::getInstance().getOption("system.time_max").as<std::size_t>() );
 
-    // // create a task arena 
-    // tbb::task_scheduler_init init(tbb::task_scheduler_init::automatic);
-    // tbb::task_arena limited(prms.cpu_threads);
     
-    // // execute in limited task arena
-    // SimulationControl control;
-    // control.setParameters(prms);
-    // control.setup();
-    // control.start();
 
+    tbb::task_scheduler_init init(ves::Parameters::getInstance().getOption("general.cpu_threads").as<std::size_t>() );
+    
     ves::Controller controller;
     controller.setup();
-
-    std::vector<std::unique_ptr<ves::Particle::Base>> particles;
-    particles.emplace_back(std::make_unique<ves::Particle::Mobile>());
-    particles.emplace_back(std::make_unique<ves::Particle::Frame>());
-    particles.emplace_back(std::make_unique<ves::Particle::Osmotic>());
+    // ves::AngularLennardJonesInteraction inter;
+    // ves::Particle::Mobile m1;
+    // m1.getCoordinates() = ves::Particle::Base::cartesian(0,0,0);
+    // m1.getOrientation() = ves::Particle::Base::cartesian(0,0,1).normalized();
+    // ves::Particle::Mobile m2;
+    // m2.getCoordinates() = ves::Particle::Base::cartesian(1.1224,0,0);
+    // m2.getOrientation() = ves::Particle::Base::cartesian(0,0,1).normalized();
+    // vesCRITICAL(inter.calculate(m1, m2));
+    controller.start();
 
     return EXIT_SUCCESS;
 }

@@ -49,6 +49,9 @@ struct ves::ParticleContainer
     bool placement_conflict(const Particle::Base&, REAL) const;
     void setup();
 
+    template<ves::Particle::TYPE T>
+    std::size_t numType() const;
+
     ves::Box<PERIODIC::ON> box;
 
 protected:
@@ -62,4 +65,12 @@ auto ves::ParticleContainer::addParticle()
 {
     tbb::mutex::scoped_lock lock(mutex);
     data.emplace_back(std::make_unique<P>());
+}
+
+
+
+template<ves::Particle::TYPE T>
+std::size_t ves::ParticleContainer::numType() const
+{
+    return std::accumulate(begin(), end(), std::size_t(0), [](auto i, const particle_ptr_t& p){ return p->getType() == T ? i+1 : i; });
 }
