@@ -83,20 +83,24 @@ auto ves::Particle::Base::getLJRejection() const -> decltype(LJ_attraction_inten
 
 
 
-void ves::Particle::Base::try_setCoordinates(const cartesian& c)
+bool ves::Particle::Base::try_setCoordinates(const cartesian& c)
 {
     if(coordinates_bounding.isAllowed(c))
     {
         coordinates = c;
+        return true;
     }
+    else return false;
 }
 
 
 
-void ves::Particle::Base::try_setOrientation(const cartesian& o)
+bool ves::Particle::Base::try_setOrientation(const cartesian& o)
 {
     if(orientation_bounding.isAllowed(o.normalized()))
     {
         orientation = o.normalized();
+        return true;
     }
+    else return false;
 }

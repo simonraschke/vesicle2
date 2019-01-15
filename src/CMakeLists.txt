@@ -21,9 +21,9 @@ target_compile_definitions(vesicle_lib PRIVATE
 # #     EIGEN_DONT_PARALLELIZE
 )
 
-set(CMAKE_CXX_FLAGS_DEBUG "-Og -g3 -ggdb -D_DEBUG -DDEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "-Og -g3 -fpic -ldl -ggdb -D_DEBUG -DDEBUG")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g1 -ggdb -DNDEBUG -DEIGEN_NO_DEBUG -ffast-math")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g0 -DNDEBUG -DEIGEN_NO_DEBUG -ffast-math")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g0 -fpic -ldl -DNDEBUG -DEIGEN_NO_DEBUG -ffast-math")
 
 target_compile_options(vesicle_lib PRIVATE 
     -Wall 
@@ -34,7 +34,7 @@ target_compile_options(vesicle_lib PRIVATE
     -std=c++17
 )
 
-target_link_libraries(vesicle_lib enhance tbb pthread boost_program_options stdc++fs)
+target_link_libraries(vesicle_lib enhance tbb pthread boost_program_options stdc++fs hdf5)
 target_include_directories(vesicle_lib PUBLIC ${PROJECT_SOURCE_DIR}/src)
 target_include_directories(vesicle_lib PUBLIC ${PROJECT_SOURCE_DIR}/lib)
 target_include_directories(vesicle_lib PUBLIC ${PROJECT_SOURCE_DIR}/lib/h5xx)

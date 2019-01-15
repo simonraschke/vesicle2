@@ -27,7 +27,6 @@
 #include <filesystem>
 #include <memory>
 #include <iomanip>
-#include <tbb/parallel_for_each.h>
 
 
 
@@ -80,7 +79,7 @@ struct ves::TrajectoryWriterGro
         }
         else
         {
-            vesLOG("app open" << file_path.string());
+            vesLOG("app open " << file_path.string());
             FILE.open(file_path, std::ios_base::app);
         }
 
@@ -252,10 +251,10 @@ void ves::TrajectoryWriterGro::makeStartFileVMD(const SYSTEM& sys)
     // VMD << "  color Type A 23" << '\n';
     // VMD << "  color Name B black" << '\n';
     // VMD << "  color Type B black" << '\n';
-    // VMD << "  color Name C red" << '\n';
-    // VMD << "  color Type C red" << '\n';
-    // VMD << "  color Name O orange" << '\n';
-    // VMD << "  color Type O orange" << '\n';
+    VMD << "  color Name C black" << '\n';
+    VMD << "  color Type C black" << '\n';
+    VMD << "  color Name O orange" << '\n';
+    VMD << "  color Type O orange" << '\n';
     VMD << "  mol delete $mol" << '\n';
 
     VMD << "  # clean up" << '\n';

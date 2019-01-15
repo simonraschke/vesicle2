@@ -33,6 +33,7 @@ namespace ves
     {
         enum class TYPE : std::int16_t
         {
+            ANY = -1,
             UNDEFINED = -1,
             MOBILE = 0,
             FRAME = 1,
@@ -88,8 +89,8 @@ public:
     CoordinatesBounding coordinates_bounding;
     OrientationBounding orientation_bounding;
     
-    virtual void try_setCoordinates(const cartesian&);
-    virtual void try_setOrientation(const cartesian&);
+    virtual bool try_setCoordinates(const cartesian&);
+    virtual bool try_setOrientation(const cartesian&);
 
     virtual std::string getName() const = 0;
 };

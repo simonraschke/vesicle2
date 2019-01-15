@@ -99,14 +99,6 @@ void ves::CellContainer::reorder()
                 }
                 vesDEBUG("leaver " << leaver->getCoordinates().format(ROWFORMAT) << " DID NOT fit into cell with bounds from " << proximity_cell.getBoundaries().corner(Particle::Base::box3d::BottomLeftFloor).format(ROWFORMAT) << " to " <<  proximity_cell.getBoundaries().corner(Particle::Base::box3d::TopRightCeil).format(ROWFORMAT));
             }
-            // if(!was_added)
-            // {
-            //     for(Cell& other : data)
-            //     {
-            //         was_added = other.try_add(leaver.get());
-            //         if(was_added) break;
-            //     }
-            // }
             assert(was_added);
             cell.removeParticle(*leaver);
             assert(!cell.contains(*leaver));

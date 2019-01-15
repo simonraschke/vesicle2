@@ -24,6 +24,9 @@
 #include "stepwidth_alignment_unit.hpp"
 #include "io/parameters.hpp"
 #include "io/trajectory_writer_gro.hpp"
+#include "io/trajectory_writer_h5.hpp"
+#include <chrono>
+#include <random>
 
 
 
@@ -38,10 +41,14 @@ struct ves::MonteCarloSystem
     void setup();
     void run();
     REAL potential() const;
+
+    auto status();
     
     inline auto getTime() const { return time; }
     inline auto getParticles() const { return std::cref(particles); }
     inline auto getBox() const { return std::cref(box); }
+    inline auto getCells() const { return std::cref(cells); }
+    inline auto getInteraction() const { return std::cref(*interaction); }
 
 protected:
     std::size_t time {0};
@@ -53,14 +60,14 @@ protected:
     ves::CellContainer cells;
     ves::ParticleContainer particles;
     std::unique_ptr<ves::AngularLennardJonesInteraction> interaction {nullptr};
-
     ves::StepwidhtAlignmentUnit sw_position;
     ves::StepwidhtAlignmentUnit sw_orientation;
-
     ves::MetropolisAcceptance acceptance;
-
     ves::Box<PERIODIC::ON> box;
     ves::TrajectoryWriterGro traj_gro;
+    ves::TrajectoryWriterH5 traj_h5;
+
+    thread_local static std::mt19937_64 pseudo_engine;
 };
 
 
