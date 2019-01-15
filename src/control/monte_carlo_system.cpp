@@ -59,26 +59,50 @@ auto ves::MonteCarloSystem::status()
 void ves::MonteCarloSystem::setup()
 {
     particles.setup();
+    time = particles.getTime();
     box.setLengthX(Parameters::getInstance().getOption("system.box.x").as<REAL>());
     box.setLengthY(Parameters::getInstance().getOption("system.box.y").as<REAL>());
     box.setLengthZ(Parameters::getInstance().getOption("system.box.z").as<REAL>());
     cells.setup();
     cells.deployParticles(particles);
     interaction = std::make_unique<AngularLennardJonesInteraction>();
-    sw_position.setup
-    (
-        1000, 
-        ves::Parameters::getInstance().getOption("system.sw_position_min").as<REAL>(), 
-        ves::Parameters::getInstance().getOption("system.sw_position_max").as<REAL>(),
-        ves::Parameters::getInstance().getOption("system.acceptance_position_target").as<REAL>()
-    );
-    sw_orientation.setup
-    (
-        1000, 
-        ves::Parameters::getInstance().getOption("system.sw_orientation_min").as<REAL>(), 
-        ves::Parameters::getInstance().getOption("system.sw_orientation_max").as<REAL>(),
-        ves::Parameters::getInstance().getOption("system.acceptance_orientation_target").as<REAL>()
-    );
+
+    if(GLOBAL::getInstance().startmode == GLOBAL::STARTMODE::NEW)
+    {
+        sw_position.setup
+        (
+            1000, 
+            ves::Parameters::getInstance().getOption("system.sw_position_min").as<REAL>(), 
+            ves::Parameters::getInstance().getOption("system.sw_position_max").as<REAL>(),
+            ves::Parameters::getInstance().getOption("system.acceptance_position_target").as<REAL>()
+        );
+        sw_orientation.setup
+        (
+            1000, 
+            ves::Parameters::getInstance().getOption("system.sw_orientation_min").as<REAL>(), 
+            ves::Parameters::getInstance().getOption("system.sw_orientation_max").as<REAL>(),
+            ves::Parameters::getInstance().getOption("system.acceptance_orientation_target").as<REAL>()
+        );
+    }
+    else if(GLOBAL::getInstance().startmode == GLOBAL::STARTMODE::RESTART)
+    {
+        sw_position.setup
+        (
+            1000, 
+            ves::Parameters::getInstance().getOption("system.sw_position_min").as<REAL>(), 
+            ves::Parameters::getInstance().getOption("system.sw_position_max").as<REAL>(),
+            ves::Parameters::getInstance().getOption("system.sw_position_actual").as<REAL>(),
+            ves::Parameters::getInstance().getOption("system.acceptance_position_target").as<REAL>()
+        );
+        sw_orientation.setup
+        (
+            1000, 
+            ves::Parameters::getInstance().getOption("system.sw_orientation_min").as<REAL>(), 
+            ves::Parameters::getInstance().getOption("system.sw_orientation_max").as<REAL>(),
+            ves::Parameters::getInstance().getOption("system.sw_orientation_actual").as<REAL>(),
+            ves::Parameters::getInstance().getOption("system.acceptance_orientation_target").as<REAL>()
+        );
+    }
 
     traj_gro.setup();
     traj_h5.setup();

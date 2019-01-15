@@ -49,6 +49,8 @@ struct ves::MonteCarloSystem
     inline auto getBox() const { return std::cref(box); }
     inline auto getCells() const { return std::cref(cells); }
     inline auto getInteraction() const { return std::cref(*interaction); }
+    inline auto getSWPosition() const { return std::cref(sw_position); }
+    inline auto getSWOrientation() const { return std::cref(sw_orientation); }
 
 protected:
     std::size_t time {0};

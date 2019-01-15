@@ -31,7 +31,8 @@ namespace ves { class StepwidhtAlignmentUnit; }
 class ves::StepwidhtAlignmentUnit
 {
 public:
-    void setup(std::size_t, float, float, float = 0.3);
+    void setup(std::size_t, float, float, float);
+    void setup(std::size_t, float, float, float, float);
 
     float operator()() const;
     void accepted();

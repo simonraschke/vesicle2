@@ -126,9 +126,11 @@ void ves::TrajectoryWriterH5::write(const SYSTEM& sys)
         h5xx::write_attribute(group, "system.gamma", Parameters::getInstance().getOption("system.gamma").as<REAL>());
         h5xx::write_attribute(group, "system.sw_position_min", Parameters::getInstance().getOption("system.sw_position_min").as<REAL>());
         h5xx::write_attribute(group, "system.sw_position_max", Parameters::getInstance().getOption("system.sw_position_max").as<REAL>());
+        h5xx::write_attribute(group, "system.sw_position_actual", sys.getSWPosition().get()());
         h5xx::write_attribute(group, "system.acceptance_position_target", Parameters::getInstance().getOption("system.acceptance_position_target").as<REAL>());
         h5xx::write_attribute(group, "system.sw_orientation_min", Parameters::getInstance().getOption("system.sw_orientation_min").as<REAL>());
         h5xx::write_attribute(group, "system.sw_orientation_max", Parameters::getInstance().getOption("system.sw_orientation_max").as<REAL>());
+        h5xx::write_attribute(group, "system.sw_orientation_actual", sys.getSWOrientation().get()());
         h5xx::write_attribute(group, "system.acceptance_orientation_target", Parameters::getInstance().getOption("system.acceptance_orientation_target").as<REAL>());
         h5xx::write_attribute(group, "system.cell_min_edge", Parameters::getInstance().getOption("system.cell_min_edge").as<REAL>());
         h5xx::write_attribute(group, "system.max_cells_dim", Parameters::getInstance().getOption("system.max_cells_dim").as<std::size_t>());

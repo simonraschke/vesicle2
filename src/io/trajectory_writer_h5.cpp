@@ -34,25 +34,25 @@ void ves::TrajectoryWriterH5::setup()
         vesWARNING("unable to close h5file");
     }
 
-    if(std::filesystem::exists(file_path))
-    {
-        // splitting the filepath
-        auto string_parts = enhance::splitAtDelimiter(file_path.string(), ".");
+    // if(std::filesystem::exists(file_path))
+    // {
+    //     // splitting the filepath
+    //     auto string_parts = enhance::splitAtDelimiter(file_path.string(), ".");
 
-        std::string first_part = std::accumulate(string_parts.begin(), std::next(string_parts.rbegin()).base(), std::string(""), [](auto i, auto j){return i+j+".";});
-        {
-            std::string name_appendix = "_old";
-            first_part.insert(std::next(first_part.rbegin()).base(), std::begin(name_appendix), std::end(name_appendix));
-        }
-        // std::string filetype = "gro";
+    //     std::string first_part = std::accumulate(string_parts.begin(), std::next(string_parts.rbegin()).base(), std::string(""), [](auto i, auto j){return i+j+".";});
+    //     {
+    //         std::string name_appendix = "_old";
+    //         first_part.insert(std::next(first_part.rbegin()).base(), std::begin(name_appendix), std::end(name_appendix));
+    //     }
+    //     // std::string filetype = "gro";
 
-        // making "trajectory_old.gro" from "trajectory.gro"
-        PATH destination = std::filesystem::absolute(std::filesystem::path(first_part+filetype));
-        vesLOG("trajectory file " << file_path.string() << " already exists. will backup to " << destination.string());
+    //     // making "trajectory_old.gro" from "trajectory.gro"
+    //     PATH destination = std::filesystem::absolute(std::filesystem::path(first_part+filetype));
+    //     vesLOG("trajectory file " << file_path.string() << " already exists. will backup to " << destination.string());
 
-        // and backup the old trajectory
-        std::filesystem::copy_file(file_path, destination, std::filesystem::copy_options::overwrite_existing);
-    }
+    //     // and backup the old trajectory
+    //     std::filesystem::copy_file(file_path, destination, std::filesystem::copy_options::overwrite_existing);
+    // }
 
     if(GLOBAL::getInstance().startmode == GLOBAL::STARTMODE::NEW)
     {
@@ -61,7 +61,7 @@ void ves::TrajectoryWriterH5::setup()
     }
     else
     {
-        vesLOG("app open" << file_path.string());
+        vesLOG("app open " << file_path.string());
         h5file.open(file_path.string(), h5xx::file::out);
     }
 }

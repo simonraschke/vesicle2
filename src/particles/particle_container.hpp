@@ -25,9 +25,28 @@
 #include "enhance/container_class_base.hpp"
 #include <deque>
 #include <memory>
+#include <type_traits>
+#include <filesystem>
 #include <tbb/mutex.h>
-// #include <tbb/cache_aligned_allocator.h>
+#include <boost/multi_array.hpp>
 
+#ifdef __clang_major__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wexceptions"
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wnon-virtual-dtor"
+#include "h5xx/h5xx.hpp"
+#pragma clang diagnostic pop
+#elif  __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wexceptions"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#include "h5xx/h5xx.hpp"
+#pragma GCC diagnostic pop
+#else
+    #error no valid compiler
+#endif
 
 
 
@@ -40,6 +59,12 @@ struct ves::ParticleContainer
 {
     using particle_ptr_t = element_t;
     using particle_t = element_t::element_type;
+    using PATH = Parameters::PATH;
+    using FSTREAM = std::ofstream;
+    using array1d_t = boost::multi_array<std::uint32_t,1>;
+    using array2d_t = boost::multi_array<REAL,2>;
+    using cartesian = Particle::Base::cartesian;
+
 
     template<typename P, typename ENABLER = typename std::enable_if<std::is_base_of<Particle::Base,P>::value>::type>
     auto addParticle();
@@ -54,7 +79,16 @@ struct ves::ParticleContainer
 
     ves::Box<PERIODIC::ON> box;
 
+    std::size_t getTime() const;
+
 protected:
+    void setupFromNew();
+    void setupFromH5();
+
+    h5xx::file h5file;
+    std::vector<std::string> getGroupNames();
+    std::size_t time_from_input = 0;
+
     tbb::mutex mutex;
 };
 

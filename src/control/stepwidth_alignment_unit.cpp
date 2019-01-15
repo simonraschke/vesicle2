@@ -15,6 +15,19 @@ void ves::StepwidhtAlignmentUnit::setup(std::size_t interval, float min, float m
 
 
 
+void ves::StepwidhtAlignmentUnit::setup(std::size_t interval, float min, float max, float actual_stepwidth, float target)
+{
+    tbb::spin_mutex::scoped_lock lock(mutex);
+    alignment_every = interval;
+    stepwidth = actual_stepwidth;
+    stepwidth_min = min;
+    stepwidth_max = max;
+    ratio_target = target;
+    setup_flag = true;
+}
+
+
+
 float ves::StepwidhtAlignmentUnit::operator()() const
 {
     return stepwidth;
