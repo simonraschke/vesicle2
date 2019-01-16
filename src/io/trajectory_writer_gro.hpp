@@ -107,14 +107,20 @@ struct ves::TrajectoryWriterGro
             const auto orientation = /*particle.getType() == Particle::TYPE::OSMOTIC ? decltype(coords)(0,0,0) :*/ particle.getOrientation();
             const auto name = particle.getName();
             
-            const std::string color_up = "O";
-            const std::string color_down = "C";
+            static std::map<ves::Particle::TYPE, std::string> colorupmap;
+            colorupmap[ves::Particle::TYPE::MOBILE] = "S";
+            colorupmap[ves::Particle::TYPE::FRAME] = "F";
+            colorupmap[ves::Particle::TYPE::OSMOTIC] = "O";
+
+            static std::map<ves::Particle::TYPE, std::string> colordownmap;
+            colordownmap[ves::Particle::TYPE::MOBILE] = "C";
+            colordownmap[ves::Particle::TYPE::FRAME] = "F";
 
             if(particle.getType() == Particle::TYPE::OSMOTIC)
             {
                 FILE << std::setw(5) <<  residue+1;
                 FILE << std::setw(5) <<  particle.getName();
-                FILE << std::setw(5) <<  "N";
+                FILE << std::setw(5) <<  colorupmap.at(particle.getType());
                 FILE << std::setw(5) <<  atom+1;
                 FILE << std::setprecision(3);
                 FILE << std::setw(8) <<  coords(0);
@@ -131,7 +137,7 @@ struct ves::TrajectoryWriterGro
             {
                 FILE << std::setw(5) <<  residue+1;
                 FILE << std::setw(5) <<  particle.getName();
-                FILE << std::setw(5) <<  color_up;
+                FILE << std::setw(5) <<  colorupmap.at(particle.getType());
                 FILE << std::setw(5) <<  atom+1;
                 FILE << std::setprecision(3);
                 FILE << std::setw(8) <<  coords(0) + orientation(0)*kappa/2.f;
@@ -146,7 +152,7 @@ struct ves::TrajectoryWriterGro
 
                 FILE << std::setw(5) <<  residue+1;
                 FILE << std::setw(5) <<  particle.getName();
-                FILE << std::setw(5) <<  color_down;
+                FILE << std::setw(5) <<  colordownmap.at(particle.getType());
                 FILE << std::setw(5) <<  atom+1;
                 FILE << std::setprecision(3);
                 FILE << std::setw(8) <<  coords(0) - orientation(0)*kappa/2.f;
@@ -218,7 +224,7 @@ void ves::TrajectoryWriterGro::makeStartFileVMD(const SYSTEM& sys)
     VMD << "color Display Background white" << '\n';
     // VMD << "draw color black" << '\n';
     VMD << "mol coloring 7 2 ResName" << '\n';
-    VMD << "mol modstyle 0 0 Licorice 3 15 15" << '\n';
+    VMD << "mol modstyle 0 0 Licorice 2 10 30" << '\n';
     VMD << "mol modmaterial 0 0 AOChalky" << '\n';
     
     VMD << "# color definitions" << '\n';
@@ -247,14 +253,14 @@ void ves::TrajectoryWriterGro::makeStartFileVMD(const SYSTEM& sys)
     // VMD << "  $sel set name C" << '\n';
     // VMD << "  $sel set type C" << '\n';
     VMD << "  # now we can define colors" << '\n';
-    // VMD << "  color Name A 23" << '\n';
-    // VMD << "  color Type A 23" << '\n';
-    // VMD << "  color Name B black" << '\n';
-    // VMD << "  color Type B black" << '\n';
-    VMD << "  color Name C black" << '\n';
-    VMD << "  color Type C black" << '\n';
-    VMD << "  color Name O orange" << '\n';
-    VMD << "  color Type O orange" << '\n';
+    VMD << "  color Name F 1" << '\n';
+    VMD << "  color Type F 1" << '\n';
+    VMD << "  color Name S 23" << '\n';
+    VMD << "  color Type S 23" << '\n';
+    VMD << "  color Name C 16" << '\n';
+    VMD << "  color Type C 16" << '\n';
+    VMD << "  color Name O 2" << '\n';
+    VMD << "  color Type O 2" << '\n';
     VMD << "  mol delete $mol" << '\n';
 
     VMD << "  # clean up" << '\n';

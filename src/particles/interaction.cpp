@@ -55,50 +55,15 @@ REAL ves::AngularLennardJonesInteraction::calculate(const particle_t& p1, const 
 
     const REAL r6 = r2*r2*r2;
 
-    // vesLOG("r6 " << 1.f/r6);
-
-    distance_vec = distance_vec.normalized();
+    distance_vec.normalize();
     const cartesian p1_orien_kappa = p1.getOrientation()*kappa/2;
     const cartesian p2_orien_kappa = p2.getOrientation()*kappa/2;
 
-    // vesLOG(p1.getOrientation().format(ROWFORMAT));
-    // vesLOG(p1_orien_kappa.format(ROWFORMAT));
-    // vesLOG(p2.getOrientation().format(ROWFORMAT));
-    // vesLOG(p2_orien_kappa.format(ROWFORMAT));
-
-    const REAL a1 = cartesian( -p1_orien_kappa + distance_vec + p2_orien_kappa ).norm();
-    const REAL b1 = cartesian(  p1_orien_kappa + distance_vec - p2_orien_kappa ).norm();
-    const REAL c1 = cartesian( -p1_orien_kappa + distance_vec - p2_orien_kappa ).norm();
-    const REAL c2 = cartesian(  p1_orien_kappa + distance_vec + p2_orien_kappa ).norm();
-
-
-    // const REAL chi = 
-    //       std::pow(cartesian( -p1_orien_kappa + distance_vec + p2_orien_kappa ).norm() - a,2)
-    //     + std::pow(cartesian(  p1_orien_kappa + distance_vec - p2_orien_kappa ).norm() - b,2)
-    //     + std::pow(cartesian( -p1_orien_kappa + distance_vec - p2_orien_kappa ).norm() - c,2)
-    //     + std::pow(cartesian(  p1_orien_kappa + distance_vec + p2_orien_kappa ).norm() - c,2);
     const REAL chi = 
-          std::pow(a1 - a,2)
-        + std::pow(b1 - b,2)
-        + std::pow(c1 - c,2)
-        + std::pow(c2 - c,2);
-
-    // const REAL chi = 
-    //       (cartesian( -p1_orien_kappa + distance_vec + p2_orien_kappa ).norm() - a)*(cartesian( -p1_orien_kappa + distance_vec + p2_orien_kappa ).norm() - a)
-    //     + (cartesian(  p1_orien_kappa + distance_vec - p2_orien_kappa ).norm() - b)*(cartesian(  p1_orien_kappa + distance_vec - p2_orien_kappa ).norm() - b)
-    //     + (cartesian( -p1_orien_kappa + distance_vec - p2_orien_kappa ).norm() - c)*(cartesian( -p1_orien_kappa + distance_vec - p2_orien_kappa ).norm() - c)
-    //     + (cartesian(  p1_orien_kappa + distance_vec + p2_orien_kappa ).norm() - c)*(cartesian(  p1_orien_kappa + distance_vec + p2_orien_kappa ).norm() - c);
-
-    // vesLOG("a " << cartesian( -p1_orien_kappa + distance_vec + p2_orien_kappa ).norm());
-    // vesLOG("b " << cartesian(  p1_orien_kappa + distance_vec - p2_orien_kappa ).norm());
-    // vesLOG("c " << cartesian( -p1_orien_kappa + distance_vec - p2_orien_kappa ).norm());
-    // vesLOG("c " << cartesian(  p1_orien_kappa + distance_vec + p2_orien_kappa ).norm());
-    // vesLOG("chi " << chi);
-
-    // const REAL attraction_factor = p1.getLJAttraction() * p2.getLJAttraction();
-    // const REAL rejection_factor = p1.getLJRejection() * p2.getLJRejection();
-
-    // vesLOG("attraction_factor "<< attraction_factor << "  rejection_factor " << rejection_factor);
+          std::pow(cartesian( -p1_orien_kappa + distance_vec + p2_orien_kappa ).norm() - a,2)
+        + std::pow(cartesian(  p1_orien_kappa + distance_vec - p2_orien_kappa ).norm() - b,2)
+        + std::pow(cartesian( -p1_orien_kappa + distance_vec - p2_orien_kappa ).norm() - c,2)
+        + std::pow(cartesian(  p1_orien_kappa + distance_vec + p2_orien_kappa ).norm() - c,2);
     
     return 4.f*epsilon*(p1.getLJAttraction()*p2.getLJAttraction()*r6*r6-(1.f-chi)*p1.getLJRejection()*p2.getLJRejection()*r6);
 }

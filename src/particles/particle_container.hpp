@@ -21,9 +21,13 @@
 #include "particles/mobile.hpp"
 #include "particles/frame.hpp"
 #include "particles/osmotic.hpp"
+#include "geometries/sphere_grid.hpp"
+#include "geometries/plane.hpp"
 #include "io/parameters.hpp"
 #include "enhance/container_class_base.hpp"
 #include <deque>
+#include <vector>
+#include <algorithm>
 #include <memory>
 #include <type_traits>
 #include <filesystem>

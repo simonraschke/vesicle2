@@ -77,8 +77,12 @@ protected:
     array2d_t getPositions(const SYSTEM&) const;
     template<typename SYSTEM>
     array2d_t getOrientations(const SYSTEM&) const;
-    // template<typename SYSTEM>
-    // array1d_t getParticleIDs(const SYSTEM&) const;
+    template<typename SYSTEM>
+    array2d_t getCoordinatesSphereBoundaries(const SYSTEM&) const;
+    template<typename SYSTEM>
+    array2d_t getCoordinatesBoxBoundaries(const SYSTEM&) const;
+    template<typename SYSTEM>
+    array2d_t getOrientationBoundaries(const SYSTEM&) const;
 
     PATH working_dir {std::filesystem::current_path()};
     PATH file_path {ves::Parameters::getInstance().getOption("output.path").as<PATH>()};
@@ -141,23 +145,62 @@ void ves::TrajectoryWriterH5::write(const SYSTEM& sys)
     
     {
         const std::string dataset_name("position");
-        auto positions = getPositions(sys);
-        h5xx::create_dataset(group, dataset_name, positions);
-        h5xx::write_dataset(group, dataset_name, positions);
+        auto dataset = getPositions(sys);
+        h5xx::create_dataset(group, dataset_name, dataset);
+        h5xx::write_dataset(group, dataset_name, dataset);
     }
     
     {
         const std::string dataset_name("orientation");
-        auto orientations = getOrientations(sys);
-        h5xx::create_dataset(group, dataset_name, orientations);
-        h5xx::write_dataset(group, dataset_name, orientations);
+        auto dataset = getOrientations(sys);
+        h5xx::create_dataset(group, dataset_name, dataset);
+        h5xx::write_dataset(group, dataset_name, dataset);
     }
     
     {
         const std::string dataset_name("type");
-        auto orientations = getResidueTypes(sys);
-        h5xx::create_dataset(group, dataset_name, orientations);
-        h5xx::write_dataset(group, dataset_name, orientations);
+        auto dataset = getResidueTypes(sys);
+        h5xx::create_dataset(group, dataset_name, dataset);
+        h5xx::write_dataset(group, dataset_name, dataset);
+    }
+
+
+    if(sys.getTime() == 0) 
+    {
+        h5xx::group rootgroup(h5file, "/");
+        try
+        {
+            const std::string dataset_name("position_sphere_bounds");
+            auto dataset = getCoordinatesSphereBoundaries(sys);
+            h5xx::create_dataset(rootgroup, dataset_name, dataset);
+            h5xx::write_dataset(rootgroup, dataset_name, dataset);
+        }
+        catch(...)
+        {
+            try
+            {
+                const std::string dataset_name("position_box_bounds");
+                auto dataset = getCoordinatesBoxBoundaries(sys);
+                h5xx::create_dataset(rootgroup, dataset_name, dataset);
+                h5xx::write_dataset(rootgroup, dataset_name, dataset);
+            }
+            catch(...)
+            {
+                ;
+            }
+        }
+        
+        try
+        {
+            const std::string dataset_name("orientation_bounds");
+            auto dataset = getOrientationBoundaries(sys);
+            h5xx::create_dataset(rootgroup, dataset_name, dataset);
+            h5xx::write_dataset(rootgroup, dataset_name, dataset);
+        }
+        catch(...)
+        {
+            ;
+        }
     }
     
     // {
@@ -207,6 +250,94 @@ ves::TrajectoryWriterH5::array2d_t ves::TrajectoryWriterH5::getOrientations(cons
         array[residue][static_cast<index>(0)] = orientation(0);
         array[residue][static_cast<index>(1)] = orientation(1);
         array[residue][static_cast<index>(2)] = orientation(2);
+    }
+    
+    return array;
+}
+
+
+
+template<typename SYSTEM>
+ves::TrajectoryWriterH5::array2d_t ves::TrajectoryWriterH5::getCoordinatesSphereBoundaries(const SYSTEM& sys) const
+{
+    typedef array2d_t::index index;
+
+    const index num = sys.getParticles().get().template numType<ves::Particle::TYPE::FRAME>();
+    if(num == 0)
+        throw std::runtime_error("no guiding elements");
+
+    array2d_t array(boost::extents[sys.getParticles().get().template numType<ves::Particle::TYPE::FRAME>()][5]);
+
+    for(index residue = 0; residue < num; ++residue)
+    {
+        const auto& target = sys.getParticles().get().data[residue];
+        const cartesian origin = *(target->coordinates_bounding.origin);
+        const auto fromto = target->coordinates_bounding.getSphereBounds();
+
+        array[residue][static_cast<index>(0)] = origin(0);
+        array[residue][static_cast<index>(1)] = origin(1);
+        array[residue][static_cast<index>(2)] = origin(2);
+        array[residue][static_cast<index>(3)] = fromto.first;
+        array[residue][static_cast<index>(4)] = fromto.second;
+    }
+    
+    return array;
+}
+
+
+
+template<typename SYSTEM>
+ves::TrajectoryWriterH5::array2d_t ves::TrajectoryWriterH5::getCoordinatesBoxBoundaries(const SYSTEM& sys) const
+{
+    typedef array2d_t::index index;
+
+    const index num = sys.getParticles().get().template numType<ves::Particle::TYPE::FRAME>();
+    if(num == 0)
+        throw std::runtime_error("no guiding elements");
+
+    array2d_t array(boost::extents[sys.getParticles().get().template numType<ves::Particle::TYPE::FRAME>()][6]);
+
+    for(index residue = 0; residue < num; ++residue)
+    {
+        const auto& target = sys.getParticles().get().data[residue];
+        const auto box = target->coordinates_bounding.getBoundingBox();
+        const auto mincorner = box.corner(ves::Particle::Base::box3d::BottomLeftFloor);
+        const auto maxcorner = box.corner(ves::Particle::Base::box3d::TopRightCeil);
+
+        array[residue][static_cast<index>(0)] = mincorner(0);
+        array[residue][static_cast<index>(1)] = mincorner(1);
+        array[residue][static_cast<index>(2)] = mincorner(2);
+        array[residue][static_cast<index>(3)] = maxcorner(0);
+        array[residue][static_cast<index>(4)] = maxcorner(1);
+        array[residue][static_cast<index>(5)] = maxcorner(2);
+    }
+    
+    return array;
+}
+
+
+
+template<typename SYSTEM>
+ves::TrajectoryWriterH5::array2d_t ves::TrajectoryWriterH5::getOrientationBoundaries(const SYSTEM& sys) const
+{
+    typedef array2d_t::index index;
+
+    const index num = sys.getParticles().get().template numType<ves::Particle::TYPE::FRAME>();
+    if(num == 0)
+        throw std::runtime_error("no guiding elements");
+
+    array2d_t array(boost::extents[sys.getParticles().get().template numType<ves::Particle::TYPE::FRAME>()][4]);
+
+    for(index residue = 0; residue < num; ++residue)
+    {
+        const auto& target = sys.getParticles().get().data[residue];
+        const cartesian origin = *(target->orientation_bounding.origin);
+        const REAL value = target->orientation_bounding.value;
+
+        array[residue][static_cast<index>(0)] = origin(0);
+        array[residue][static_cast<index>(1)] = origin(1);
+        array[residue][static_cast<index>(2)] = origin(2);
+        array[residue][static_cast<index>(3)] = value;
     }
     
     return array;

@@ -21,16 +21,17 @@ target_compile_definitions(vesicle_lib PRIVATE
 # #     EIGEN_DONT_PARALLELIZE
 )
 
-set(CMAKE_CXX_FLAGS_DEBUG "-Og -g3 -fpic -ldl -ggdb -D_DEBUG -DDEBUG")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g1 -ggdb -DNDEBUG -DEIGEN_NO_DEBUG -ffast-math")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g0 -fpic -ldl -DNDEBUG -DEIGEN_NO_DEBUG -ffast-math")
+set(CMAKE_CXX_FLAGS_DEBUG "-Og -g3 -ggdb -D_DEBUG -DDEBUG")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g1 -ggdb -DNDEBUG -DEIGEN_NO_DEBUG -ffast-math -mtune=generic")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g0 -DNDEBUG -DEIGEN_NO_DEBUG -ffast-math -mtune=generic")
 
 target_compile_options(vesicle_lib PRIVATE 
     -Wall 
     -Wextra 
     -Wpedantic 
     -Weffc++
-    -march=nocona 
+    -march=native
+    -mtune=native
     -std=c++17
 )
 

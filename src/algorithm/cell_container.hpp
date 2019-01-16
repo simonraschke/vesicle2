@@ -25,6 +25,7 @@
 #include "enhance/iterator_utility.hpp"
 #include "enhance/parallel.hpp"
 #include <tbb/parallel_for_each.h>
+#include <vector>
 
 
 
@@ -59,7 +60,10 @@ struct ves::CellContainer
 
 
 protected:
+    std::vector<std::size_t> iteration_IDs;
     ves::Box<PERIODIC::ON> box;
+
+    thread_local static std::mt19937_64 pseudo_engine;
 };
 
 
@@ -103,17 +107,20 @@ void ves::CellContainer::deployParticles(const CONTAINER& particles)
 template<typename FUNCTOR>
 void ves::CellContainer::cellBasedApplyFunctor(FUNCTOR&& func)
 {
-    // vesDEBUG(__PRETTY_FUNCTION__)
+    std::shuffle(std::begin(iteration_IDs), std::end(iteration_IDs), pseudo_engine);
+    
     enhance::scoped_root_dummy ROOT;
 
     while( ! (allInState<CellState::STATE::FINISHED>()) )
     {
-        enhance::for_each_from(
-            begin(), 
-            end(),
-            begin() + enhance::random<std::size_t>(0, data.size()-1), 
-            [&](Cell& cell)
+        // enhance::for_each_from(
+        //     begin(), 
+        //     end(),
+        //     begin() + enhance::random<std::size_t>(0, data.size()-1), 
+        //     [&](Cell& cell)
+        for(auto ID : iteration_IDs)
         {
+            ves::Cell& cell = data[ID];
             if( 
                 cell.regionNoneInState<CellState::STATE::BLOCKED>() && 
                 cell.state == CellState::STATE::IDLE
@@ -132,7 +139,8 @@ void ves::CellContainer::cellBasedApplyFunctor(FUNCTOR&& func)
                     assert( cell.state == CellState::STATE::FINISHED );
                 } );
             }
-        });
+        // });
+        }
     }
     
     vesDEBUG("now check if all are FINISHED");

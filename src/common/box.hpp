@@ -203,9 +203,9 @@ template<>
 EIGEN_STRONG_INLINE Box<PERIODIC::ON>::cartesian Box<PERIODIC::ON>::distanceVector(const cartesian& c1, const cartesian& c2) const
 {
     cartesian distance_cartesian = c2-c1;
-    distance_cartesian(0) = distance_cartesian(0) - x * std::round(distance_cartesian(0)/(x));
-    distance_cartesian(1) = distance_cartesian(1) - y * std::round(distance_cartesian(1)/(y));
-    distance_cartesian(2) = distance_cartesian(2) - z * std::round(distance_cartesian(2)/(z));
+    distance_cartesian(0) = distance_cartesian(0) - x * std::round(static_cast<REAL>(distance_cartesian(0)/(x)));
+    distance_cartesian(1) = distance_cartesian(1) - y * std::round(static_cast<REAL>(distance_cartesian(1)/(y)));
+    distance_cartesian(2) = distance_cartesian(2) - z * std::round(static_cast<REAL>(distance_cartesian(2)/(z)));
     return distance_cartesian;
 }
 

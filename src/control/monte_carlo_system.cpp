@@ -88,7 +88,7 @@ void ves::MonteCarloSystem::setup()
     {
         sw_position.setup
         (
-            1000, 
+            1000*particles.data.size(), 
             ves::Parameters::getInstance().getOption("system.sw_position_min").as<REAL>(), 
             ves::Parameters::getInstance().getOption("system.sw_position_max").as<REAL>(),
             ves::Parameters::getInstance().getOption("system.sw_position_actual").as<REAL>(),
@@ -96,7 +96,7 @@ void ves::MonteCarloSystem::setup()
         );
         sw_orientation.setup
         (
-            1000, 
+            1000*particles.data.size(), 
             ves::Parameters::getInstance().getOption("system.sw_orientation_min").as<REAL>(), 
             ves::Parameters::getInstance().getOption("system.sw_orientation_max").as<REAL>(),
             ves::Parameters::getInstance().getOption("system.sw_orientation_actual").as<REAL>(),
@@ -152,27 +152,32 @@ void ves::MonteCarloSystem::run()
 
 void ves::MonteCarloSystem::cellStep(const ves::Cell& cell)
 {
-    // vesDEBUG(__PRETTY_FUNCTION__ << std::addressof(cell));
+    // CAUTION: this function is exactly what it should look like.
+    // do not change order or modify any function call
+
     REAL last_energy_value;
+    REAL energy_after;
+    std::uniform_real_distribution<REAL> dist_coords(-sw_position(),sw_position());
+    std::uniform_real_distribution<REAL> dist_orientation(-sw_orientation(),sw_orientation());
+    Particle::Base::cartesian translation;
+    Particle::Base::cartesian orientation_before;
     
     for(const Cell::particle_ptr_t& particle : cell)
     {
-        last_energy_value = 0;
+        // last_energy_value = 0;
         // coordinates move
         {
-            const auto stepwidth = sw_position();
-            std::uniform_real_distribution<REAL> dist(-stepwidth,stepwidth);
-            const auto translation = Particle::Base::cartesian
+            translation = Particle::Base::cartesian
             (
-                dist(pseudo_engine),
-                dist(pseudo_engine),
-                dist(pseudo_engine)
+                dist_coords(pseudo_engine),
+                dist_coords(pseudo_engine),
+                dist_coords(pseudo_engine)
             );
 
             last_energy_value = cell.potential(*particle);
             if(particle->try_setCoordinates(particle->getCoordinates()+translation))
             {
-                const REAL energy_after = cell.potential(*particle);
+                energy_after = cell.potential(*particle);
 
                 // rejection
                 if(!acceptance.isValid(energy_after - last_energy_value))
@@ -195,13 +200,14 @@ void ves::MonteCarloSystem::cellStep(const ves::Cell& cell)
 
         // orientation move
         {
-            const REAL stepwidth = sw_orientation();
-            const auto random_vec = Particle::Base::cartesian::Random();
-            const Eigen::AngleAxis<REAL> rotation (stepwidth, random_vec);
+            // rotation = Eigen::AngleAxis<REAL>(dist_orientation(pseudo_engine), Particle::Base::cartesian::Random());
 
-            if(const auto orientation_before = particle->getOrientation(); particle->try_setOrientation(rotation * particle->getOrientation()))
+            if( 
+                orientation_before = particle->getOrientation(); 
+                particle->try_setOrientation(Eigen::AngleAxis<REAL>(dist_orientation(pseudo_engine), Particle::Base::cartesian::Random()) * particle->getOrientation())
+            )
             {
-                const REAL energy_after = cell.potential(*particle);
+                energy_after = cell.potential(*particle);
 
                 // rejection
                 if(!acceptance.isValid(energy_after - last_energy_value))

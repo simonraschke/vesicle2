@@ -12,8 +12,8 @@ add_subdirectory(lib)
 add_subdirectory(src)
 
 set(CMAKE_CXX_FLAGS_DEBUG "-Og -g3 -ggdb -D_DEBUG -DDEBUG")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g1 -ggdb -DNDEBUG -DEIGEN_NO_DEBUG -ffast-math")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g0 -DNDEBUG -DEIGEN_NO_DEBUG -ffast-math")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g1 -ggdb -DNDEBUG -DEIGEN_NO_DEBUG -ffast-math -mtune=generic")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g0 -DNDEBUG -DEIGEN_NO_DEBUG -ffast-math -mtune=generic")
 
 ### vesicle
 set(BASIC_SOURCE src/vesicle.cpp)
@@ -21,7 +21,15 @@ add_executable(vesicle ${BASIC_SOURCE})
 
 set_target_properties(vesicle PROPERTIES RUNTIME_OUTPUT_DIRECTORY "~/bin/")
 set_target_properties(vesicle PROPERTIES CXX_STANDARD 17)
-target_compile_options(vesicle PRIVATE -Wall -Wextra -Wpedantic -ferror-limit=2 -march=nocona -std=c++17)
+target_compile_options(vesicle PRIVATE 
+    -Wall 
+    -Wextra 
+    -Wpedantic 
+    -Weffc++
+    -march=native
+    -mtune=native
+    -std=c++17
+)
 
 # Link
 target_link_libraries(vesicle vesicle_lib)

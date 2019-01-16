@@ -41,9 +41,9 @@ struct ves::Bounding
 {
 protected:
     Bounding() = default;
-    std::unique_ptr<Eigen::Matrix<REAL,3,1>> origin {nullptr};
 
 public:
+    std::unique_ptr<Eigen::Matrix<REAL,3,1>> origin {nullptr};
 
     virtual ~Bounding() = default;
     virtual bool isAllowed(const decltype(origin)::element_type&) = 0;
@@ -65,7 +65,8 @@ struct ves::OrientationBounding
         }
         else
         {
-            const bool allowed = std::acos(compare.normalized().dot(origin->normalized())) < value; 
+            return (std::acos(compare.normalized().dot(origin->normalized())) < value); 
+            const bool allowed = (std::acos(compare.normalized().dot(origin->normalized())) < value); 
             if(allowed)
             {
                 origin = std::make_unique<decltype(origin)::element_type>(compare);
@@ -148,6 +149,11 @@ struct ves::CoordinatesBounding
         sphere_bounds.reset(nullptr);
     };
 
+    inline bool isBoxBound() const { return static_cast<bool>(bounding_box); };
+    inline bool isSphereBound() const { return static_cast<bool>(sphere_bounds); };
+
+    inline auto getBoundingBox() const { return *bounding_box; };
+    inline auto getSphereBounds() const { return *sphere_bounds; };
 
 
 protected:

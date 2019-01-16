@@ -19,6 +19,11 @@
 #include "cell_container.hpp"
 
 
+
+thread_local std::mt19937_64 ves::CellContainer::pseudo_engine(std::random_device().operator()());
+
+
+
 void ves::CellContainer::setup()
 {
     box.setLengthX(Parameters::getInstance().getOption("system.box.x").as<REAL>());
@@ -75,6 +80,9 @@ void ves::CellContainer::setup()
         assert(cell.state == CellState::STATE::IDLE);
     });
     #endif
+
+    iteration_IDs.resize(data.size());
+    std::iota(std::begin(iteration_IDs), std::end(iteration_IDs), 0);
 }
 
 
