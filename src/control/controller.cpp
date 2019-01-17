@@ -58,7 +58,10 @@ void ves::Controller::signal(int SIG)
 void ves::Controller::setup()
 {
     vesDEBUG(__PRETTY_FUNCTION__);
+
+    system.setup();
     
+    vesLOG("");
     vesLOG("SIZE OF DATA STRUCTURES");
     vesLOG("int                             " << sizeof(int));
     vesLOG("float                           " << sizeof(float));
@@ -66,14 +69,15 @@ void ves::Controller::setup()
     vesLOG("ves::Particle::Base::cartesian  " << sizeof(ves::Particle::Base::cartesian));
     vesLOG("ves::Particle::Base             " << sizeof(ves::Particle::Base));
     vesLOG("ves::Particle::Mobile           " << sizeof(ves::Particle::Mobile));
+    vesLOG("ves::Particle::Frame            " << sizeof(ves::Particle::Frame));
     vesLOG("ves::Particle::Osmotic          " << sizeof(ves::Particle::Osmotic));
     vesLOG("ves::ParticleContainer          " << sizeof(ves::ParticleContainer));
     vesLOG("ves::Cell                       " << sizeof(ves::Cell));
     vesLOG("ves::CellContainer              " << sizeof(ves::CellContainer));
     vesLOG("ves::Box<PERIODIC::ON>          " << sizeof(ves::Box<PERIODIC::ON>));
     vesLOG("ves::Box<PERIODIC::Off>         " << sizeof(ves::Box<PERIODIC::OFF>));
+    vesLOG("");
 
-    system.setup();
 }
 
 

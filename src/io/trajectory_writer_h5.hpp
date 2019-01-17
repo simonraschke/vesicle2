@@ -177,6 +177,7 @@ void ves::TrajectoryWriterH5::write(const SYSTEM& sys)
         }
         catch(...)
         {
+            vesLOG("no position_sphere_bounds found. will try to get position_box_bounds");
             try
             {
                 const std::string dataset_name("position_box_bounds");
@@ -186,7 +187,8 @@ void ves::TrajectoryWriterH5::write(const SYSTEM& sys)
             }
             catch(...)
             {
-                ;
+                vesLOG("no position_box_bounds found");
+                vesCRITICAL(sys.getParticles().get().template numType<ves::Particle::TYPE::FRAME>()<< " GUIDING ELEMENTS HAVE NO BOUNDARIES");
             }
         }
         
@@ -199,16 +201,9 @@ void ves::TrajectoryWriterH5::write(const SYSTEM& sys)
         }
         catch(...)
         {
-            ;
+            vesLOG("no orientation_bounds found");
         }
     }
-    
-    // {
-    //     const std::string dataset_name("IDs");
-    //     auto IDs = getParticleIDs(sys);
-    //     h5xx::create_dataset(group, dataset_name, IDs);
-    //     h5xx::write_dataset(group, dataset_name, IDs);
-    // }
 }
 
 
@@ -266,12 +261,16 @@ ves::TrajectoryWriterH5::array2d_t ves::TrajectoryWriterH5::getCoordinatesSphere
     if(num == 0)
         throw std::runtime_error("no guiding elements");
 
-    array2d_t array(boost::extents[sys.getParticles().get().template numType<ves::Particle::TYPE::FRAME>()][5]);
+    array2d_t array(boost::extents[num][5]);
 
     for(index residue = 0; residue < num; ++residue)
     {
         const auto& target = sys.getParticles().get().data[residue];
         const cartesian origin = *(target->coordinates_bounding.origin);
+        
+        if(! target->coordinates_bounding.isSphereBound())
+            throw std::runtime_error("particle has no sphere bounds");
+
         const auto fromto = target->coordinates_bounding.getSphereBounds();
 
         array[residue][static_cast<index>(0)] = origin(0);
@@ -301,6 +300,10 @@ ves::TrajectoryWriterH5::array2d_t ves::TrajectoryWriterH5::getCoordinatesBoxBou
     {
         const auto& target = sys.getParticles().get().data[residue];
         const auto box = target->coordinates_bounding.getBoundingBox();
+
+        if(! target->coordinates_bounding.isBoxBound())
+            throw std::runtime_error("particle has no box bounds");
+
         const auto mincorner = box.corner(ves::Particle::Base::box3d::BottomLeftFloor);
         const auto maxcorner = box.corner(ves::Particle::Base::box3d::TopRightCeil);
 

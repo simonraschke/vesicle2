@@ -133,7 +133,7 @@ void ves::ParticleContainer::setupFromNew()
                             const REAL dist_y = box.getLengthY()/frame_guides_grid_edge;
                             const REAL dist_z = box.getLengthZ()/frame_guides_grid_edge;
 
-                            vesLOG("generate sphere grid with edge "<<frame_guides_grid_edge<< " and " << guiding_elements_each <<" points each" );
+                            vesLOG("generate sphere grid with edge " << frame_guides_grid_edge << " and " << guiding_elements_each <<" points each" );
                             auto spheregrid = ves::SphereGridGeometry(frame_guides_grid_edge, radius, guiding_elements_each);
                             spheregrid.scale(cartesian(dist_x, dist_y, dist_z));
                             spheregrid.shift(cartesian(dist_x/2, dist_y/2, dist_z/2));
@@ -183,6 +183,53 @@ void ves::ParticleContainer::setupFromNew()
                             box.setLengthX(edge);
                             box.setLengthY(edge);
                             box.setLengthZ(edge);
+
+                            const std::size_t guiding_elements_per_dimension = std::sqrt(guiding_elements_each);
+                            const auto plane_edge = Parameters::getInstance().getOption("system.plane_edge").as<REAL>();
+                            const auto plane_edge_half = plane_edge/2;
+                            const auto scaling_factor = plane_edge / (guiding_elements_per_dimension-1);
+                            const auto shift_vec = cartesian(box.getLengthX()/2-plane_edge_half, box.getLengthY()/2-plane_edge_half, box.getLengthZ()/2);
+
+                            if(guiding_elements_per_dimension*guiding_elements_per_dimension != guiding_elements_each)
+                            {
+                                vesCRITICAL("guiding_elements_per_dimension != guiding_elements_each");
+                            }
+
+                            ves::PlaneGeometry plane(guiding_elements_per_dimension, guiding_elements_per_dimension);
+                            plane.scale(cartesian(scaling_factor, scaling_factor, 0));
+                            plane.shift(shift_vec);
+
+                            const auto box_min = cartesian(box.getLengthX()/2-plane_edge_half, box.getLengthY()/2-plane_edge_half, box.getLengthZ()/2-ljsigma/2);
+                            const auto box_max = cartesian(box.getLengthX()/2+plane_edge_half, box.getLengthY()/2+plane_edge_half, box.getLengthZ()/2+ljsigma/2);
+                            const ves::Particle::Base::box3d frame_bounds(box_min, box_max);
+                            
+                            for(const auto& point : plane.points)
+                            {
+                                addParticle<Particle::Frame>();
+                                data.back()->coordinates_bounding.setBoundingBox(ves::Particle::Base::box3d(frame_bounds));
+                                bool worked = data.back()->try_setCoordinates(point);
+                                if(!worked)
+                                    vesCRITICAL("setting Particle::Frame coordinates to point did not work");
+
+                                // data.back()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(sphere.origin));
+                                worked = data.back()->try_setOrientation(cartesian::UnitZ());
+                                data.back()->orientation_bounding.value = PI_4;
+                                if(!worked)
+                                    vesCRITICAL("setting Particle::Frame orientation to point did not work");
+                            }
+                            for(std::size_t i = 0; i < mobile; ++i)
+                            {
+                                const auto minimum_offset = ljsigma;
+                                addParticle<Particle::Mobile>();
+                                do
+                                {
+                                    data.back()->try_setCoordinates(box.randomPointInside());
+                                }
+                                while(placement_conflict(*(data.back()), minimum_offset));
+                                while(!data.back()->try_setOrientation(ves::Particle::Base::cartesian::Random().normalized())){;}
+                                // vesLOG("placed particle: " << data.back()->getCoordinates().format(ROWFORMAT));
+                            }
+
                             break;
                         }
 

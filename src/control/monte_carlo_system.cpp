@@ -106,6 +106,12 @@ void ves::MonteCarloSystem::setup()
 
     traj_gro.setup();
     traj_h5.setup();
+
+    if(time == 0)
+    {
+        traj_gro.write(*this);
+        traj_h5.write(*this);
+    }
 }
 
 
@@ -137,7 +143,7 @@ void ves::MonteCarloSystem::run()
             vesCRITICAL("lost particles while reordering: " << std::boolalpha << (num_members_is==num_members_should) << " found " << num_members_is << " should be " << num_members_should )
         }
 
-        if(time % output_skip == 0)
+        if(time % output_skip == 0 and time != 0)
         {
             vesLOG(status().str());
             // vesLOG(time << " took " << duration << " s,  acceptance: " << sw_position.getRatio() << "  " << sw_orientation.getRatio() << "  sw: " << sw_position() << "  " << sw_orientation());
