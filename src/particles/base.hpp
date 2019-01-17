@@ -71,6 +71,7 @@ public:
     inline virtual Base* getDerived() override { return this; };
 
     inline bool operator==(Base& other) const { return std::addressof(*this) == std::addressof(other); };
+    inline bool operator!=(Base& other) const { return std::addressof(*this) != std::addressof(other); };
 
     inline virtual auto getType() const -> TYPE = 0;
 

@@ -155,6 +155,17 @@ auto ves::Cell::getLeavers() -> decltype(data)
 
 
 
+auto ves::Cell::getListFromParticlesInRegion() const
+{
+    std::deque<particle_ptr_t> particles;
+    for(const Cell& cell : region)
+        for(const particle_ptr_t& particle : cell.data)
+            particles.push_back(particle);
+    return particles;
+}
+
+
+
 REAL ves::Cell::potential(const particle_t& particle) const 
 {
     return std::accumulate(std::begin(region), std::end(region), REAL(0), [&](REAL __val, const auto& cell)
@@ -164,4 +175,54 @@ REAL ves::Cell::potential(const particle_t& particle) const
             return particle == *compare ? _val : _val + interaction.calculate(particle, *compare);
         });
     });
+}
+
+
+
+REAL ves::Cell::potentialIgnoreParticle(particle_t& particle) const 
+{
+    const auto particles = getListFromParticlesInRegion();
+    REAL sum = 0;
+    for(std::size_t i = 0; i < particles.size(); ++i)
+    {
+        for(std::size_t j = 0; j<i; ++j)
+        {
+            if(*particles[i] != particle && *particles[j] != particle)
+                sum += interaction.calculate(*particles[i], *particles[j]);
+        }
+    }
+    return sum;
+}
+
+
+
+REAL ves::Cell::potentialWithPhantomParticle(particle_t& particle) const 
+{
+    auto particles = getListFromParticlesInRegion();
+    particles.emplace_back(nonstd::make_observer<particle_t>(&particle));
+    REAL sum = 0;
+    for(std::size_t i = 0; i < particles.size(); ++i)
+    {
+        for(std::size_t j = 0; j<i; ++j)
+        {
+            sum += interaction.calculate(*particles[i], *particles[j]);
+        }
+    }
+    return sum;
+}
+
+
+
+REAL ves::Cell::potential() const 
+{
+    const auto particles = getListFromParticlesInRegion();
+    REAL sum = 0;
+    for(std::size_t i = 0; i < particles.size(); ++i)
+    {
+        for(std::size_t j = 0; j<i; ++j)
+        {
+            sum += interaction.calculate(*particles[i], *particles[j]);
+        }
+    }
+    return sum;
 }

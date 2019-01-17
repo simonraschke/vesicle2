@@ -58,6 +58,9 @@ protected:
     const std::size_t output_skip;
     
     void cellStep(const ves::Cell&);
+    void grandCanonicalStep();
+    bool try_addParticle();
+    bool try_removeParticle();
 
     ves::CellContainer cells;
     ves::ParticleContainer particles;

@@ -50,7 +50,10 @@ struct ves::CellContainer
     template<typename CONTAINER>
     void deployParticles(const CONTAINER&);
 
-    void deployParticle(const particle_t&);
+    decltype(data)::iterator getCellOfCartesian(const cartesian&);
+
+    decltype(data)::iterator deployParticle(particle_t&);
+    void removeParticle(particle_t&);
 
     template<CellState::STATE S>
     bool allInState() const;

@@ -103,8 +103,6 @@ void ves::TrajectoryWriterH5::write(const SYSTEM& sys)
     vesDEBUG(__PRETTY_FUNCTION__<< "  simulation time: " << sys.getTime());
     
     assert(h5file.valid());
-    assert(file_path);
-    assert(target_range);
 
     const std::string group_name("snapshot"+std::to_string(static_cast<std::size_t>(sys.getTime())));
     h5xx::group group(h5file, group_name);
@@ -168,8 +166,7 @@ void ves::TrajectoryWriterH5::write(const SYSTEM& sys)
         h5xx::write_dataset(group, dataset_name, dataset);
     }
 
-
-    if(sys.getTime() == 0) 
+    if(sys.getTime() == 0)
     {
         h5xx::group rootgroup(h5file, "/");
         try
@@ -194,7 +191,8 @@ void ves::TrajectoryWriterH5::write(const SYSTEM& sys)
             {
                 vesLOG(e.what());
                 vesLOG("no position_box_bounds found");
-                vesCRITICAL(sys.getParticles().get().template numType<ves::Particle::TYPE::FRAME>()<< " GUIDING ELEMENTS HAVE NO BOUNDARIES");
+                if(sys.getParticles().get().template numType<ves::Particle::TYPE::FRAME>() > 0)
+                    vesCRITICAL(sys.getParticles().get().template numType<ves::Particle::TYPE::FRAME>()<< " GUIDING ELEMENTS HAVE NO BOUNDARIES");
             }
         }
         

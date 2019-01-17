@@ -25,9 +25,8 @@
 #include "geometries/plane.hpp"
 #include "io/parameters.hpp"
 #include "enhance/container_class_base.hpp"
+#include "observer_ptr.hpp"
 #include <deque>
-#include <vector>
-#include <algorithm>
 #include <memory>
 #include <type_traits>
 #include <filesystem>
@@ -70,10 +69,16 @@ struct ves::ParticleContainer
     using cartesian = Particle::Base::cartesian;
 
 
-    template<typename P, typename ENABLER = typename std::enable_if<std::is_base_of<Particle::Base,P>::value>::type>
+    template<ves::Particle::TYPE T>
     auto addParticle();
+
+    template<ves::Particle::TYPE T>
+    nonstd::observer_ptr<particle_t> getRandomParticle();
+
     void removeParticle(const particle_t&);
     void removeParticle(const particle_ptr_t&);
+
+    cartesian getRandomValidPoint(REAL) const;
 
     bool placement_conflict(const Particle::Base&, REAL) const;
     void setup();
@@ -98,11 +103,28 @@ protected:
 
 
 
-template<typename P, typename ENABLER>
+template<ves::Particle::TYPE T>
 auto ves::ParticleContainer::addParticle()
 {
     tbb::mutex::scoped_lock lock(mutex);
-    data.emplace_back(std::make_unique<P>());
+    const auto first_it = std::find_if(begin(),end(), [](const particle_ptr_t& p){ return p->getType() == T; } );
+    
+    switch(T)
+    {
+        case ves::Particle::TYPE::MOBILE  : { return data.emplace(first_it, std::make_unique<Particle::Mobile>());  break; }
+        case ves::Particle::TYPE::FRAME   : { return data.emplace(first_it, std::make_unique<Particle::Frame>());   break; }
+        case ves::Particle::TYPE::OSMOTIC : { return data.emplace(first_it, std::make_unique<Particle::Osmotic>()); break; }
+    }
+}
+
+
+
+template<ves::Particle::TYPE T>
+nonstd::observer_ptr<ves::ParticleContainer::particle_t> ves::ParticleContainer::getRandomParticle()
+{
+    const std::size_t random_number = enhance::random<std::size_t>(0, numType<T>() - 1 );
+    const auto first_it = std::find_if(begin(),end(), [](const particle_ptr_t& p){ return p->getType() == T; } );
+    return nonstd::make_observer<particle_t>( (first_it + random_number)->get() );
 }
 
 

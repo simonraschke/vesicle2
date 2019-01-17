@@ -105,7 +105,7 @@ void ves::CellContainer::reorder()
                     vesDEBUG("leaver " << leaver->getCoordinates().format(ROWFORMAT) << " DID fit into cell with bounds from" << proximity_cell.getBoundaries().corner(Particle::Base::box3d::BottomLeftFloor).format(ROWFORMAT) << " to " <<  proximity_cell.getBoundaries().corner(Particle::Base::box3d::TopRightCeil).format(ROWFORMAT));
                     break;
                 }
-                vesDEBUG("leaver " << leaver->getCoordinates().format(ROWFORMAT) << " DID NOT fit into cell with bounds from " << proximity_cell.getBoundaries().corner(Particle::Base::box3d::BottomLeftFloor).format(ROWFORMAT) << " to " <<  proximity_cell.getBoundaries().corner(Particle::Base::box3d::TopRightCeil).format(ROWFORMAT));
+                // vesDEBUG("leaver " << leaver->getCoordinates().format(ROWFORMAT) << " DID NOT fit into cell with bounds from " << proximity_cell.getBoundaries().corner(Particle::Base::box3d::BottomLeftFloor).format(ROWFORMAT) << " to " <<  proximity_cell.getBoundaries().corner(Particle::Base::box3d::TopRightCeil).format(ROWFORMAT));
             }
             assert(was_added);
             cell.removeParticle(*leaver);
@@ -129,4 +129,39 @@ void ves::CellContainer::preparation()
 std::size_t ves::CellContainer::membersContained() const
 {
     return std::accumulate(begin(), end(), std::size_t(0), [](auto i, const Cell& cell){ return i + cell.data.size(); });
+}
+
+
+
+decltype(ves::CellContainer::data)::iterator ves::CellContainer::getCellOfCartesian(const cartesian& c)
+{
+    for(std::size_t i = 0; i < data.size(); ++i)
+    {
+        if(data[i].contains(c))
+            return begin() + i;
+    }
+    throw std::runtime_error("cartesian out of bounds of CellContainer");
+}
+
+
+
+decltype(ves::CellContainer::data)::iterator ves::CellContainer::deployParticle(particle_t& particle)
+{
+    for(std::size_t i = 0; i < data.size(); ++i)
+    {
+        // if(done) break;
+        if(data[i].try_add(&particle))
+            return begin() + i;
+    }
+    throw std::runtime_error("unable to deploy particle into CellContainer");
+}
+
+
+
+void ves::CellContainer::removeParticle(particle_t& particle)
+{
+    std::for_each(begin(), end(), [&](Cell& cell)
+    {
+        cell.removeParticle(particle);
+    });
 }

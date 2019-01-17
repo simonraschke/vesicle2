@@ -71,11 +71,16 @@ public:
     bool try_add(particle_t*);
     auto getLeavers() -> decltype(data);
     REAL potential(const particle_t&) const;
+    REAL potential() const;
+    REAL potentialWithPhantomParticle(particle_t&) const;
+    REAL potentialIgnoreParticle(particle_t&) const;
     bool contains(const cartesian&) const;
     bool contains(const particle_t&);
 
     template<typename CONTAINER>
     void setupProximityAndRegion(CONTAINER&);
+
+    auto getListFromParticlesInRegion() const;
 
     inline const decltype(proximity)& getProximity() const { return proximity; }
     inline const decltype(region)& getRegion() const { return region; }

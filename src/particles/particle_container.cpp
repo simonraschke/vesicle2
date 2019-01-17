@@ -36,6 +36,52 @@ void ves::ParticleContainer::setup()
 
 
 
+bool ves::ParticleContainer::placement_conflict(const particle_t& p, REAL minimum_distance) const
+{
+    const REAL minimum_distance_squared = minimum_distance * minimum_distance;
+    return std::find_if_not(std::begin(data), std::end(data), [&](const auto& p_ptr)
+    {
+        return (p == *p_ptr) || box.squared_distance(p, *p_ptr) > minimum_distance_squared;
+    }) != std::end(data);
+}
+
+
+
+ves::ParticleContainer::cartesian ves::ParticleContainer::getRandomValidPoint(REAL minimum_distance) const
+{
+    const REAL minimum_distance_squared = minimum_distance * minimum_distance;
+
+    auto random_point = box.randomPointInside();
+
+    while( std::find_if_not(begin(), end(), [&](const auto& p_ptr)
+    {
+        return box.squared_distance(random_point, p_ptr->getCoordinates()) > minimum_distance_squared;
+    }) != end() )
+    {
+        random_point = box.randomPointInside();
+    }
+    return random_point;
+
+}
+
+
+
+void ves::ParticleContainer::removeParticle(const particle_t& p)
+{
+    tbb::mutex::scoped_lock lock(mutex);
+    data.erase(std::remove_if(begin(), end(), [&](const auto& comp){ return p == *comp; }), end());
+}
+
+
+
+void ves::ParticleContainer::removeParticle(const particle_ptr_t& p)
+{
+    tbb::mutex::scoped_lock lock(mutex);
+    data.erase(std::remove(begin(), end(), p), end());
+}
+
+
+
 void ves::ParticleContainer::setupFromNew()
 {
     switch (GLOBAL::getInstance().simulationmode.load())
@@ -78,14 +124,13 @@ void ves::ParticleContainer::setupFromNew()
             for(std::size_t i = 0; i < Parameters::getInstance().getOption("system.mobile").as<std::size_t>(); ++i)
             {
                 const auto minimum_offset = Parameters::getInstance().getOption("system.ljsigma").as<REAL>();
-                addParticle<Particle::Mobile>();
+                auto particle_it = addParticle<Particle::TYPE::MOBILE>();
                 do
                 {
-                    data.back()->try_setCoordinates(box.randomPointInside());
+                    particle_it->get()->try_setCoordinates(box.randomPointInside());
                 }
-                while(placement_conflict(*(data.back()), minimum_offset));
-                while(!data.back()->try_setOrientation(ves::Particle::Base::cartesian::Random().normalized())){;}
-                // vesLOG("placed particle: " << data.back()->getCoordinates().format(ROWFORMAT));
+                while(placement_conflict(*(particle_it->get()), minimum_offset));
+                while(!particle_it->get()->try_setOrientation(ves::Particle::Base::cartesian::Random().normalized())){;}
             }
             
 
@@ -176,16 +221,16 @@ void ves::ParticleContainer::setupFromNew()
                     {
                         for(const auto& point : sphere.points)
                         {
-                            addParticle<Particle::Frame>();
-                            data.back()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(point));
-                            data.back()->coordinates_bounding.setBoundingSphere(0, ljsigma);
-                            bool worked = data.back()->try_setCoordinates(point);
+                            auto particle_it = addParticle<Particle::TYPE::FRAME>();
+                            particle_it->get()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(point));
+                            particle_it->get()->coordinates_bounding.setBoundingSphere(0, ljsigma);
+                            bool worked = particle_it->get()->try_setCoordinates(point);
                             if(!worked)
                                 vesCRITICAL("setting Particle::Frame coordinates to point did not work");
 
-                            // data.back()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(sphere.origin));
-                            worked = data.back()->try_setOrientation(point-sphere.origin);
-                            data.back()->orientation_bounding.value = PI_4;
+                            // particle_it->get()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(sphere.origin));
+                            worked = particle_it->get()->try_setOrientation(point-sphere.origin);
+                            particle_it->get()->orientation_bounding.value = PI_4;
                             if(!worked)
                                 vesCRITICAL("setting Particle::Frame orientation to point did not work");
                         }
@@ -193,14 +238,14 @@ void ves::ParticleContainer::setupFromNew()
                     for(std::size_t i = 0; i < mobile; ++i)
                     {
                         const auto minimum_offset = ljsigma;
-                        addParticle<Particle::Mobile>();
+                        auto particle_it = addParticle<Particle::TYPE::MOBILE>();
                         do
                         {
-                            data.back()->try_setCoordinates(box.randomPointInside());
+                            particle_it->get()->try_setCoordinates(box.randomPointInside());
                         }
-                        while(placement_conflict(*(data.back()), minimum_offset));
-                        while(!data.back()->try_setOrientation(ves::Particle::Base::cartesian::Random().normalized())){;}
-                        // vesLOG("placed particle: " << data.back()->getCoordinates().format(ROWFORMAT));
+                        while(placement_conflict(*(particle_it->get()), minimum_offset));
+                        while(!particle_it->get()->try_setOrientation(ves::Particle::Base::cartesian::Random().normalized())){;}
+                        // vesLOG("placed particle: " << particle_it->get()->getCoordinates().format(ROWFORMAT));
                     }
                     break;
                 }
@@ -232,28 +277,28 @@ void ves::ParticleContainer::setupFromNew()
 
                     for(const auto& point : plane.points)
                     {
-                        addParticle<Particle::Frame>();
-                        data.back()->coordinates_bounding.setBoundingBox(ves::Particle::Base::box3d(frame_bounds));
-                        bool worked = data.back()->try_setCoordinates(point);
+                        auto particle_it = addParticle<Particle::TYPE::FRAME>();
+                        particle_it->get()->coordinates_bounding.setBoundingBox(ves::Particle::Base::box3d(frame_bounds));
+                        bool worked = particle_it->get()->try_setCoordinates(point);
                         if(!worked)
                             vesCRITICAL("setting Particle::Frame coordinates to point did not work");
 
-                        // data.back()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(sphere.origin));
-                        worked = data.back()->try_setOrientation(cartesian::UnitZ());
-                        data.back()->orientation_bounding.value = PI_4;
+                        // particle_it->get()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(sphere.origin));
+                        worked = particle_it->get()->try_setOrientation(cartesian::UnitZ());
+                        particle_it->get()->orientation_bounding.value = PI_4;
                         if(!worked)
                             vesCRITICAL("setting Particle::Frame orientation to point did not work");
                     }
                     for(std::size_t i = 0; i < mobile; ++i)
                     {
                         const auto minimum_offset = ljsigma;
-                        addParticle<Particle::Mobile>();
+                        auto particle_it = addParticle<Particle::TYPE::MOBILE>();
 
-                        do data.back()->try_setCoordinates(box.randomPointInside());
-                        while(placement_conflict(*(data.back()), minimum_offset));
+                        do particle_it->get()->try_setCoordinates(box.randomPointInside());
+                        while(placement_conflict(*(particle_it->get()), minimum_offset));
 
-                        while(!data.back()->try_setOrientation(ves::Particle::Base::cartesian::Random().normalized())){;}
-                        // vesLOG("placed particle: " << data.back()->getCoordinates().format(ROWFORMAT));
+                        while(!particle_it->get()->try_setOrientation(ves::Particle::Base::cartesian::Random().normalized())){;}
+                        // vesLOG("placed particle: " << particle_it->get()->getCoordinates().format(ROWFORMAT));
                     }
 
                     break;
@@ -307,31 +352,31 @@ void ves::ParticleContainer::setupFromNew()
                 if(guiding_elements_to_place > 0)
                 {
                     --guiding_elements_to_place;
-                    addParticle<Particle::Frame>();
-                    data.back()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(point));
-                    data.back()->coordinates_bounding.setBoundingSphere(0, ljsigma);
-                    bool worked = data.back()->try_setCoordinates(point);
-                    // vesLOG(data.back()->getCoordinates().format(ROWFORMAT));
-                    // vesLOG(data.back()->coordinates_bounding.origin->format(ROWFORMAT));
+                    auto particle_it = addParticle<Particle::TYPE::FRAME>();
+                    particle_it->get()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(point));
+                    particle_it->get()->coordinates_bounding.setBoundingSphere(0, ljsigma);
+                    bool worked = particle_it->get()->try_setCoordinates(point);
+                    // vesLOG(particle_it->get()->getCoordinates().format(ROWFORMAT));
+                    // vesLOG(particle_it->get()->coordinates_bounding.origin->format(ROWFORMAT));
                     if(!worked)
                     {
                         vesCRITICAL("setting Particle::Frame coordinates to point did not work");
                     }
 
-                    worked = data.back()->try_setOrientation(point-sphere.origin);
-                    data.back()->orientation_bounding.value = PI_4;
+                    worked = particle_it->get()->try_setOrientation(point-sphere.origin);
+                    particle_it->get()->orientation_bounding.value = PI_4;
                     if(!worked)
                         vesCRITICAL("setting Particle::Frame orientation to point did not work");
                 }
                 else if(mobile_to_place > 0)
                 {
                     --mobile_to_place;
-                    addParticle<Particle::Mobile>();
-                    bool worked = data.back()->try_setCoordinates(point);
+                    auto particle_it = addParticle<Particle::TYPE::MOBILE>();
+                    bool worked = particle_it->get()->try_setCoordinates(point);
                     if(!worked)
                         vesCRITICAL("setting Particle::Mobile coordinates to point did not work");
 
-                    worked = data.back()->try_setOrientation(point-sphere.origin);
+                    worked = particle_it->get()->try_setOrientation(point-sphere.origin);
                     if(!worked)
                         vesCRITICAL("setting Particle::Mobile orientation to point did not work");
                 }
@@ -347,26 +392,26 @@ void ves::ParticleContainer::setupFromNew()
 
             for(std::size_t i = 0; i < osmotic_inside; ++i)
             {
-                addParticle<Particle::Osmotic>();
+                auto particle_it = addParticle<Particle::TYPE::OSMOTIC>();
                 auto point = box.randomPointInside();
                 do
                 {
                     point = box.randomPointInside();
-                    data.back()->try_setCoordinates(box.randomPointInside());
+                    particle_it->get()->try_setCoordinates(box.randomPointInside());
                 }
-                while((point-box.getCenter()).norm() < inner_radius && placement_conflict(*(data.back()), ljsigma));
+                while((point-box.getCenter()).norm() < inner_radius && placement_conflict(*(particle_it->get()), ljsigma));
             }
 
             for(std::size_t i = 0; i < osmotic_outside; ++i)
             {
-                addParticle<Particle::Osmotic>();
+                auto particle_it = addParticle<Particle::TYPE::OSMOTIC>();
                 auto point = box.randomPointInside();
                 do
                 {
                     point = box.randomPointInside();
-                    data.back()->try_setCoordinates(box.randomPointInside());
+                    particle_it->get()->try_setCoordinates(box.randomPointInside());
                 }
-                while((point-box.getCenter()).norm() > outer_radius && placement_conflict(*(data.back()), ljsigma));
+                while((point-box.getCenter()).norm() > outer_radius && placement_conflict(*(particle_it->get()), ljsigma));
             }
             
 
@@ -415,7 +460,7 @@ std::vector<std::string> ves::ParticleContainer::getGroupNames()
         return std::stoi(cmp_a) < std::stoi(cmp_b);
     });
     // group_names.sort();
-    assert(std::is_sorted(group_names));
+    assert(std::is_sorted(std::begin(group_names), std::end(group_names)));
     return group_names;
 }
 
@@ -511,18 +556,26 @@ void ves::ParticleContainer::setupFromH5()
         switch (types[i])
         {
             case static_cast<std::underlying_type<ves::Particle::TYPE>::type>(ves::Particle::TYPE::MOBILE):
-                addParticle<ves::Particle::Mobile>();
+            {
+                [[maybe_unused]] auto particle_it = addParticle<ves::Particle::TYPE::MOBILE>();
                 break;
+            }
             case static_cast<std::underlying_type<ves::Particle::TYPE>::type>(ves::Particle::TYPE::FRAME):
-                addParticle<ves::Particle::Frame>();
+            {
+                [[maybe_unused]] auto particle_it = addParticle<ves::Particle::TYPE::FRAME>();
                 break;
+            }
             case static_cast<std::underlying_type<ves::Particle::TYPE>::type>(ves::Particle::TYPE::OSMOTIC):
-                addParticle<ves::Particle::Osmotic>();
+            {
+                [[maybe_unused]] auto particle_it = addParticle<ves::Particle::TYPE::OSMOTIC>();
                 break;
+            }
         
             default:
+            {
                 throw std::logic_error("undefined particle type in TrajectoryDistributorH5 in row "+std::to_string(i));
                 break;
+            }
         }
     }
 
@@ -590,31 +643,4 @@ void ves::ParticleContainer::setupFromH5()
     }
 
     h5file.close();
-}
-
-
-
-bool ves::ParticleContainer::placement_conflict(const particle_t& p, REAL minimum_distance) const
-{
-    const REAL minimum_distance_squared = minimum_distance * minimum_distance;
-    return std::find_if_not(std::begin(data), std::end(data), [&](const auto& p_ptr)
-    {
-        return (p == *p_ptr) || box.squared_distance(p, *p_ptr) > minimum_distance_squared;
-    }) != std::end(data);
-}
-
-
-
-void ves::ParticleContainer::removeParticle(const particle_t& p)
-{
-    tbb::mutex::scoped_lock lock(mutex);
-    data.erase(std::remove_if(begin(), end(), [&](const auto& comp){ return p == *comp; }), end());
-}
-
-
-
-void ves::ParticleContainer::removeParticle(const particle_ptr_t& p)
-{
-    tbb::mutex::scoped_lock lock(mutex);
-    data.erase(std::remove(begin(), end(), p), end());
 }

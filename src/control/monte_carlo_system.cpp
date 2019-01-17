@@ -143,6 +143,9 @@ void ves::MonteCarloSystem::run()
             vesCRITICAL("lost particles while reordering: " << std::boolalpha << (num_members_is==num_members_should) << " found " << num_members_is << " should be " << num_members_should )
         }
 
+        if(time % 500 == 0 and time != 0)
+            grandCanonicalStep();
+
         if(time % output_skip == 0 and time != 0)
         {
             vesLOG(status().str());
@@ -158,7 +161,7 @@ void ves::MonteCarloSystem::run()
 
 void ves::MonteCarloSystem::cellStep(const ves::Cell& cell)
 {
-    // CAUTION: this function is exactly what it should look like.
+    // TODO:FIXME:TODO:FIXME: CAUTION: this function is exactly what it should look like.
     // do not change order or modify any function call
 
     REAL last_energy_value;
@@ -253,4 +256,62 @@ REAL ves::MonteCarloSystem::potential() const
         *energy += pre_sum;
     });
     return !std::isnan(*energy) ? *energy : throw std::runtime_error("potential Energy is NAN");
+}
+
+
+
+void ves::MonteCarloSystem::grandCanonicalStep()
+{
+    try_addParticle();
+    try_removeParticle();
+}
+
+
+
+bool ves::MonteCarloSystem::try_addParticle()
+{
+    auto random_point = particles.getRandomValidPoint(ves::Parameters::getInstance().getOption("system.ljsigma").as<REAL>());
+    auto new_particle = ves::Particle::Mobile();
+    new_particle.getCoordinates() = random_point;
+    new_particle.getOrientation() = ves::Particle::Base::cartesian::Random().normalized();
+    auto cell_it = cells.getCellOfCartesian(new_particle.getCoordinates());
+    const auto energy_before = cell_it->potential();
+    const auto energy_after = cell_it->potentialWithPhantomParticle(std::ref(new_particle));
+
+    if(!acceptance.isValid(energy_after - energy_before))
+    {
+        return false;
+    }
+    else
+    {
+        vesLOG("added");
+        auto particle_it = particles.addParticle<ves::Particle::TYPE::MOBILE>();
+        particle_it->get()->getCoordinates() = new_particle.getCoordinates();
+        particle_it->get()->getOrientation() = new_particle.getOrientation();
+        cells.deployParticle(*particle_it->get());
+        return true;
+    }
+}
+
+
+
+bool ves::MonteCarloSystem::try_removeParticle()
+{
+    auto particle = particles.getRandomParticle<ves::Particle::TYPE::MOBILE>();
+    const auto particle_coords = particle->getCoordinates();
+    auto cell_it = cells.getCellOfCartesian(particle_coords);
+    const auto energy_before = cell_it->potential();
+    const auto energy_after = cell_it->potentialIgnoreParticle(*particle.get());
+
+    if(!acceptance.isValid(energy_after - energy_before))
+    {
+        return false;
+    }
+    else
+    {
+        vesLOG("removed");
+        cells.removeParticle(*particle.get());
+        particles.removeParticle(*particle.get());
+        return true;
+    }
 }
