@@ -65,6 +65,7 @@ public:
     REAL getLengthX() const;
     REAL getLengthY() const;
     REAL getLengthZ() const;
+    REAL getVolume() const;
 
     cartesian getCenter() const;
 
@@ -177,6 +178,14 @@ template<PERIODIC P>
 REAL Box<P>::getLengthZ() const
 {
     return z;
+}
+
+
+
+template<PERIODIC P>
+REAL Box<P>::getVolume() const
+{
+    return bounding_box->volume();
 }
 
 

@@ -95,6 +95,13 @@ void ves::ParticleContainer::setupFromNew()
         case GLOBAL::SIMULATIONMODE::FGA:
         {
             vesLOG("GLOBAL::SIMULATIONMODE::FGA");
+            const std::size_t mobile = Parameters::getInstance().getOption("system.mobile").as<std::size_t>();
+            const std::size_t frame_guides_grid_edge = Parameters::getInstance().getOption("system.frame_guides_grid_edge").as<std::size_t>();
+            const std::size_t guiding_elements_each = Parameters::getInstance().getOption("system.guiding_elements_each").as<std::size_t>();
+            const REAL density = Parameters::getInstance().getOption("system.density").as<REAL>();
+            const REAL ljsigma = Parameters::getInstance().getOption("system.ljsigma").as<REAL>();
+            const REAL gamma = Parameters::getInstance().getOption("system.gamma").as<REAL>();
+
             try
             {
                 REAL x = Parameters::getInstance().getOption("system.box.x").as<REAL>();
@@ -109,13 +116,6 @@ void ves::ParticleContainer::setupFromNew()
                 vesLOG("unable to get box from x|y|z, will calculate cubic box from density and particles");
                 try
                 {
-                    REAL density = Parameters::getInstance().getOption("system.density").as<REAL>();
-                    const std::size_t mobile = Parameters::getInstance().getOption("system.mobile").as<std::size_t>();
-                    const std::size_t frame_guides_grid_edge = Parameters::getInstance().getOption("system.frame_guides_grid_edge").as<std::size_t>();
-                    const std::size_t guiding_elements_each = Parameters::getInstance().getOption("system.guiding_elements_each").as<std::size_t>();
-                    const REAL ljsigma = Parameters::getInstance().getOption("system.ljsigma").as<REAL>();
-                    const REAL gamma = Parameters::getInstance().getOption("system.gamma").as<REAL>();
-
                     switch(GLOBAL::getInstance().fgamode.load())
                     {
                         case GLOBAL::FGAMODE::SPHERE:
@@ -127,50 +127,6 @@ void ves::ParticleContainer::setupFromNew()
                             box.setLengthX(edge);
                             box.setLengthY(edge);
                             box.setLengthZ(edge);
-
-                            const REAL radius = std::pow(ljsigma,1.0/6.0)/(2.0*std::sin(gamma));
-                            const REAL dist_x = box.getLengthX()/frame_guides_grid_edge;
-                            const REAL dist_y = box.getLengthY()/frame_guides_grid_edge;
-                            const REAL dist_z = box.getLengthZ()/frame_guides_grid_edge;
-
-                            vesLOG("generate sphere grid with edge " << frame_guides_grid_edge << " and " << guiding_elements_each <<" points each" );
-                            auto spheregrid = ves::SphereGridGeometry(frame_guides_grid_edge, radius, guiding_elements_each);
-                            spheregrid.scale(cartesian(dist_x, dist_y, dist_z));
-                            spheregrid.shift(cartesian(dist_x/2, dist_y/2, dist_z/2));
-
-                            for(const auto& sphere : spheregrid.spheres)
-                            {
-                                for(const auto& point : sphere.points)
-                                {
-                                    addParticle<Particle::Frame>();
-                                    data.back()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(point));
-                                    data.back()->coordinates_bounding.setBoundingSphere(0, ljsigma);
-                                    // data.back()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(point));
-                                    // const REAL offset = radius/2;
-                                    // data.back()->coordinates_bounding.setBoundingBox(Particle::Base::box3d(cartesian(point).array()-offset, cartesian(point).array()+offset));
-                                    bool worked = data.back()->try_setCoordinates(point);
-                                    if(!worked)
-                                        vesCRITICAL("setting Particle::Frame coordinates to point did not work");
-
-                                    // data.back()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(sphere.origin));
-                                    worked = data.back()->try_setOrientation(point-sphere.origin);
-                                    data.back()->orientation_bounding.value = PI_4;
-                                    if(!worked)
-                                        vesCRITICAL("setting Particle::Frame orientation to point did not work");
-                                }
-                            }
-                            for(std::size_t i = 0; i < mobile; ++i)
-                            {
-                                const auto minimum_offset = ljsigma;
-                                addParticle<Particle::Mobile>();
-                                do
-                                {
-                                    data.back()->try_setCoordinates(box.randomPointInside());
-                                }
-                                while(placement_conflict(*(data.back()), minimum_offset));
-                                while(!data.back()->try_setOrientation(ves::Particle::Base::cartesian::Random().normalized())){;}
-                                // vesLOG("placed particle: " << data.back()->getCoordinates().format(ROWFORMAT));
-                            }
                             break;
                         }
 
@@ -183,68 +139,130 @@ void ves::ParticleContainer::setupFromNew()
                             box.setLengthX(edge);
                             box.setLengthY(edge);
                             box.setLengthZ(edge);
-
-                            const std::size_t guiding_elements_per_dimension = std::sqrt(guiding_elements_each);
-                            const auto plane_edge = Parameters::getInstance().getOption("system.plane_edge").as<REAL>();
-                            const auto plane_edge_half = plane_edge/2;
-                            const auto scaling_factor = plane_edge / (guiding_elements_per_dimension-1);
-                            const auto shift_vec = cartesian(box.getLengthX()/2-plane_edge_half, box.getLengthY()/2-plane_edge_half, box.getLengthZ()/2);
-
-                            if(guiding_elements_per_dimension*guiding_elements_per_dimension != guiding_elements_each)
-                            {
-                                vesCRITICAL("guiding_elements_per_dimension != guiding_elements_each");
-                            }
-
-                            ves::PlaneGeometry plane(guiding_elements_per_dimension, guiding_elements_per_dimension);
-                            plane.scale(cartesian(scaling_factor, scaling_factor, 0));
-                            plane.shift(shift_vec);
-
-                            const auto box_min = cartesian(box.getLengthX()/2-plane_edge_half, box.getLengthY()/2-plane_edge_half, box.getLengthZ()/2-ljsigma/2);
-                            const auto box_max = cartesian(box.getLengthX()/2+plane_edge_half, box.getLengthY()/2+plane_edge_half, box.getLengthZ()/2+ljsigma/2);
-                            const ves::Particle::Base::box3d frame_bounds(box_min, box_max);
-                            
-                            for(const auto& point : plane.points)
-                            {
-                                addParticle<Particle::Frame>();
-                                data.back()->coordinates_bounding.setBoundingBox(ves::Particle::Base::box3d(frame_bounds));
-                                bool worked = data.back()->try_setCoordinates(point);
-                                if(!worked)
-                                    vesCRITICAL("setting Particle::Frame coordinates to point did not work");
-
-                                // data.back()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(sphere.origin));
-                                worked = data.back()->try_setOrientation(cartesian::UnitZ());
-                                data.back()->orientation_bounding.value = PI_4;
-                                if(!worked)
-                                    vesCRITICAL("setting Particle::Frame orientation to point did not work");
-                            }
-                            for(std::size_t i = 0; i < mobile; ++i)
-                            {
-                                const auto minimum_offset = ljsigma;
-                                addParticle<Particle::Mobile>();
-                                do
-                                {
-                                    data.back()->try_setCoordinates(box.randomPointInside());
-                                }
-                                while(placement_conflict(*(data.back()), minimum_offset));
-                                while(!data.back()->try_setOrientation(ves::Particle::Base::cartesian::Random().normalized())){;}
-                                // vesLOG("placed particle: " << data.back()->getCoordinates().format(ROWFORMAT));
-                            }
-
                             break;
                         }
-
-                        default:
-                            vesCRITICAL("encountered invalde FGAMODE");
+                        default: 
+                            vesCRITICAL("encountered invalde FGAMODE during box setup");
+                            break;
                     }
                 }
                 catch(std::logic_error e)
                 {
                     vesCRITICAL("unable to get box from density|mobile+guiding_elements, abort  ");
                 }
+            }
 
-                Parameters::getInstance().mutableAccess().insert(std::make_pair("system.box.x", boost::program_options::variable_value(box.getLengthX(), false)));
-                Parameters::getInstance().mutableAccess().insert(std::make_pair("system.box.y", boost::program_options::variable_value(box.getLengthY(), false)));
-                Parameters::getInstance().mutableAccess().insert(std::make_pair("system.box.z", boost::program_options::variable_value(box.getLengthZ(), false)));
+            Parameters::getInstance().mutableAccess().insert(std::make_pair("system.box.x", boost::program_options::variable_value(box.getLengthX(), false)));
+            Parameters::getInstance().mutableAccess().insert(std::make_pair("system.box.y", boost::program_options::variable_value(box.getLengthY(), false)));
+            Parameters::getInstance().mutableAccess().insert(std::make_pair("system.box.z", boost::program_options::variable_value(box.getLengthZ(), false)));
+
+            switch(GLOBAL::getInstance().fgamode.load())
+            {
+                case GLOBAL::FGAMODE::SPHERE:
+                {
+                    vesLOG("GLOBAL::FGAMODE::SPHERE");
+
+                    const REAL radius = std::pow(ljsigma,1.0/6.0)/(2.0*std::sin(gamma));
+                    const REAL dist_x = box.getLengthX()/frame_guides_grid_edge;
+                    const REAL dist_y = box.getLengthY()/frame_guides_grid_edge;
+                    const REAL dist_z = box.getLengthZ()/frame_guides_grid_edge;
+
+                    vesLOG("generate sphere grid with edge " << frame_guides_grid_edge << " and " << guiding_elements_each <<" points each" );
+                    auto spheregrid = ves::SphereGridGeometry(frame_guides_grid_edge, radius, guiding_elements_each);
+                    spheregrid.scale(cartesian(dist_x, dist_y, dist_z));
+                    spheregrid.shift(cartesian(dist_x/2, dist_y/2, dist_z/2));
+
+                    for(const auto& sphere : spheregrid.spheres)
+                    {
+                        for(const auto& point : sphere.points)
+                        {
+                            addParticle<Particle::Frame>();
+                            data.back()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(point));
+                            data.back()->coordinates_bounding.setBoundingSphere(0, ljsigma);
+                            bool worked = data.back()->try_setCoordinates(point);
+                            if(!worked)
+                                vesCRITICAL("setting Particle::Frame coordinates to point did not work");
+
+                            // data.back()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(sphere.origin));
+                            worked = data.back()->try_setOrientation(point-sphere.origin);
+                            data.back()->orientation_bounding.value = PI_4;
+                            if(!worked)
+                                vesCRITICAL("setting Particle::Frame orientation to point did not work");
+                        }
+                    }
+                    for(std::size_t i = 0; i < mobile; ++i)
+                    {
+                        const auto minimum_offset = ljsigma;
+                        addParticle<Particle::Mobile>();
+                        do
+                        {
+                            data.back()->try_setCoordinates(box.randomPointInside());
+                        }
+                        while(placement_conflict(*(data.back()), minimum_offset));
+                        while(!data.back()->try_setOrientation(ves::Particle::Base::cartesian::Random().normalized())){;}
+                        // vesLOG("placed particle: " << data.back()->getCoordinates().format(ROWFORMAT));
+                    }
+                    break;
+                }
+
+                case GLOBAL::FGAMODE::PLANE:
+                {
+                    vesLOG("GLOBAL::FGAMODE::PLANE");
+
+                    const std::size_t guiding_elements_per_dimension = std::sqrt(guiding_elements_each);
+                    const auto plane_edge = Parameters::getInstance().getOption("system.plane_edge").as<REAL>();
+                    const auto plane_edge_half = plane_edge/2;
+                    const auto scaling_factor = plane_edge / (guiding_elements_per_dimension-1);
+                    const auto shift_vec = cartesian(box.getLengthX()/2-plane_edge_half, box.getLengthY()/2-plane_edge_half, box.getLengthZ()/2);
+
+                    if(guiding_elements_per_dimension*guiding_elements_per_dimension != guiding_elements_each)
+                    {
+                        vesCRITICAL("guiding_elements_per_dimension != guiding_elements_each");
+                    }
+
+                    ves::PlaneGeometry plane(guiding_elements_per_dimension, guiding_elements_per_dimension);
+                    plane.scale(cartesian(scaling_factor, scaling_factor, 0));
+                    plane.shift(shift_vec);
+
+                    const auto box_min = cartesian(box.getLengthX()/2-plane_edge_half, box.getLengthY()/2-plane_edge_half, box.getLengthZ()/2-ljsigma/2);
+                    const auto box_max = cartesian(box.getLengthX()/2+plane_edge_half, box.getLengthY()/2+plane_edge_half, box.getLengthZ()/2+ljsigma/2);
+                    const ves::Particle::Base::box3d frame_bounds(box_min, box_max);
+                    
+                    vesLOG("will setup plane with " << plane.points.size() << " particles and initial distance of " << scaling_factor);
+
+                    for(const auto& point : plane.points)
+                    {
+                        addParticle<Particle::Frame>();
+                        data.back()->coordinates_bounding.setBoundingBox(ves::Particle::Base::box3d(frame_bounds));
+                        bool worked = data.back()->try_setCoordinates(point);
+                        if(!worked)
+                            vesCRITICAL("setting Particle::Frame coordinates to point did not work");
+
+                        // data.back()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(sphere.origin));
+                        worked = data.back()->try_setOrientation(cartesian::UnitZ());
+                        data.back()->orientation_bounding.value = PI_4;
+                        if(!worked)
+                            vesCRITICAL("setting Particle::Frame orientation to point did not work");
+                    }
+                    for(std::size_t i = 0; i < mobile; ++i)
+                    {
+                        const auto minimum_offset = ljsigma;
+                        addParticle<Particle::Mobile>();
+
+                        do data.back()->try_setCoordinates(box.randomPointInside());
+                        while(placement_conflict(*(data.back()), minimum_offset));
+
+                        while(!data.back()->try_setOrientation(ves::Particle::Base::cartesian::Random().normalized())){;}
+                        // vesLOG("placed particle: " << data.back()->getCoordinates().format(ROWFORMAT));
+                    }
+
+                    break;
+                }
+
+                default:
+                    vesCRITICAL("encountered invalde FGAMODE during particle generation");
+                    break;
+
             }
             break;
         }
@@ -252,10 +270,112 @@ void ves::ParticleContainer::setupFromNew()
         case GLOBAL::SIMULATIONMODE::OSMOTIC:
         {
             vesLOG("GLOBAL::SIMULATIONMODE::OSMOTIC");
+
+            const std::size_t mobile = Parameters::getInstance().getOption("system.mobile").as<std::size_t>();
+            const std::size_t guiding_elements_each = Parameters::getInstance().getOption("system.guiding_elements_each").as<std::size_t>();
+            const REAL ljsigma = Parameters::getInstance().getOption("system.ljsigma").as<REAL>();
+            const REAL gamma = Parameters::getInstance().getOption("system.gamma").as<REAL>();
+            const REAL kappa = Parameters::getInstance().getOption("system.kappa").as<REAL>();
+
+            try
+            {
+                REAL x = Parameters::getInstance().getOption("system.box.x").as<REAL>();
+                REAL y = Parameters::getInstance().getOption("system.box.y").as<REAL>();
+                REAL z = Parameters::getInstance().getOption("system.box.z").as<REAL>();
+                box.setLengthX(x);
+                box.setLengthY(y);
+                box.setLengthZ(z);
+            }
+            catch(std::logic_error e)
+            {
+                vesCRITICAL("unable to get box from x|y|z");
+            }
+
+            const REAL radius = enhance::nth_root<6>(ljsigma*2)/(2.0*std::sin(gamma)) + kappa;
+            vesLOG("construct sphere: center " << box.getCenter().format(ROWFORMAT) << "  | radius " << radius << "  | " <<  mobile+guiding_elements_each);
+            ves::SphereGeometry sphere(box.getCenter(), radius, mobile+guiding_elements_each+1);
+
+            auto guiding_elements_to_place = guiding_elements_each;
+            auto mobile_to_place = mobile;
+            vesLOG("construct sphere from " << guiding_elements_to_place << " guiding elements and " << mobile_to_place << " mobile particles");
+            std::size_t second_skipper = 0;
+            for(const auto& point : sphere.points)
+            {
+                if(second_skipper++ == 1)
+                    continue;
+
+                if(guiding_elements_to_place > 0)
+                {
+                    --guiding_elements_to_place;
+                    addParticle<Particle::Frame>();
+                    data.back()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(point));
+                    data.back()->coordinates_bounding.setBoundingSphere(0, ljsigma);
+                    bool worked = data.back()->try_setCoordinates(point);
+                    // vesLOG(data.back()->getCoordinates().format(ROWFORMAT));
+                    // vesLOG(data.back()->coordinates_bounding.origin->format(ROWFORMAT));
+                    if(!worked)
+                    {
+                        vesCRITICAL("setting Particle::Frame coordinates to point did not work");
+                    }
+
+                    worked = data.back()->try_setOrientation(point-sphere.origin);
+                    data.back()->orientation_bounding.value = PI_4;
+                    if(!worked)
+                        vesCRITICAL("setting Particle::Frame orientation to point did not work");
+                }
+                else if(mobile_to_place > 0)
+                {
+                    --mobile_to_place;
+                    addParticle<Particle::Mobile>();
+                    bool worked = data.back()->try_setCoordinates(point);
+                    if(!worked)
+                        vesCRITICAL("setting Particle::Mobile coordinates to point did not work");
+
+                    worked = data.back()->try_setOrientation(point-sphere.origin);
+                    if(!worked)
+                        vesCRITICAL("setting Particle::Mobile orientation to point did not work");
+                }
+                else
+                    vesCRITICAL("nothing to place");
+            }
+
+            const REAL inner_radius = radius-ljsigma;
+            const REAL outer_radius = radius+ljsigma;
+            const std::size_t osmotic_inside = Parameters::getInstance().getOption("system.osmotic_density_inside").as<REAL>() * (enhance::sphere_volume(inner_radius));
+            const std::size_t osmotic_outside = Parameters::getInstance().getOption("system.osmotic_density_outside").as<REAL>() * (box.getVolume() - enhance::sphere_volume(outer_radius));
+            vesLOG("place osmotic_inside " << osmotic_inside << " and osmotic_outside " << osmotic_outside);
+
+            for(std::size_t i = 0; i < osmotic_inside; ++i)
+            {
+                addParticle<Particle::Osmotic>();
+                auto point = box.randomPointInside();
+                do
+                {
+                    point = box.randomPointInside();
+                    data.back()->try_setCoordinates(box.randomPointInside());
+                }
+                while((point-box.getCenter()).norm() < inner_radius && placement_conflict(*(data.back()), ljsigma));
+            }
+
+            for(std::size_t i = 0; i < osmotic_outside; ++i)
+            {
+                addParticle<Particle::Osmotic>();
+                auto point = box.randomPointInside();
+                do
+                {
+                    point = box.randomPointInside();
+                    data.back()->try_setCoordinates(box.randomPointInside());
+                }
+                while((point-box.getCenter()).norm() > outer_radius && placement_conflict(*(data.back()), ljsigma));
+            }
+            
+
+            Parameters::getInstance().mutableAccess().insert(std::make_pair("system.density", boost::program_options::variable_value(REAL(data.size())/box.getVolume(), false)));
             break;
         }
 
         default:
+            vesCRITICAL("encountered invalid SIMULATIONMODE");
             break;
     }
 }
@@ -320,7 +440,7 @@ void ves::ParticleContainer::setupFromH5()
             h5file.open(filepath.string(), h5xx::file::in);
     }
     std::string latest_group_name = getGroupNames().back();
-    vesLOG("get group" << latest_group_name);
+    vesLOG("get group " << latest_group_name);
     h5xx::group group(h5file, latest_group_name);
     h5xx::group rootgroup(h5file, "/");
 
@@ -458,6 +578,7 @@ void ves::ParticleContainer::setupFromH5()
             }
             case static_cast<std::underlying_type<ves::Particle::TYPE>::type>(ves::Particle::TYPE::OSMOTIC):
             {
+                data.at(i)->getCoordinates() = cartesian(positions[i][0], positions[i][1], positions[i][2]);
                 break;
             }
         

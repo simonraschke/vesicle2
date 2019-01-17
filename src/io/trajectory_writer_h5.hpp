@@ -33,6 +33,8 @@
 #pragma clang diagnostic ignored "-Wexceptions"
 #pragma clang diagnostic ignored "-Wunused-parameter"
 #pragma clang diagnostic ignored "-Wnon-virtual-dtor"
+#pragma clang diagnostic ignored "-Wdelete-non-virtual-dtor"
+#pragma clang diagnostic ignored "-Weffc++"
 #include "h5xx/h5xx.hpp"
 #pragma clang diagnostic pop
 #elif  __GNUC__
@@ -40,6 +42,8 @@
 #pragma GCC diagnostic ignored "-Wexceptions"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
+#pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
+#pragma GCC diagnostic ignored "-Weffc++"
 #include "h5xx/h5xx.hpp"
 #pragma GCC diagnostic pop
 #else
@@ -175,8 +179,9 @@ void ves::TrajectoryWriterH5::write(const SYSTEM& sys)
             h5xx::create_dataset(rootgroup, dataset_name, dataset);
             h5xx::write_dataset(rootgroup, dataset_name, dataset);
         }
-        catch(...)
+        catch(const std::runtime_error& e)
         {
+            vesLOG(e.what());
             vesLOG("no position_sphere_bounds found. will try to get position_box_bounds");
             try
             {
@@ -185,8 +190,9 @@ void ves::TrajectoryWriterH5::write(const SYSTEM& sys)
                 h5xx::create_dataset(rootgroup, dataset_name, dataset);
                 h5xx::write_dataset(rootgroup, dataset_name, dataset);
             }
-            catch(...)
+            catch(const std::runtime_error& e)
             {
+                vesLOG(e.what());
                 vesLOG("no position_box_bounds found");
                 vesCRITICAL(sys.getParticles().get().template numType<ves::Particle::TYPE::FRAME>()<< " GUIDING ELEMENTS HAVE NO BOUNDARIES");
             }
@@ -212,10 +218,11 @@ template<typename SYSTEM>
 ves::TrajectoryWriterH5::array2d_t ves::TrajectoryWriterH5::getPositions(const SYSTEM& sys) const
 {
     typedef array2d_t::index index;
+    const index particles_with_positions = sys.getParticles().get().data.size();
 
-    array2d_t array(boost::extents[sys.getParticles().get().data.size()][3]);
+    array2d_t array(boost::extents[particles_with_positions][3]);
 
-    for(index residue = 0; residue < static_cast<index>(sys.getParticles().get().data.size()); ++residue)
+    for(index residue = 0; residue < particles_with_positions; ++residue)
     {
         const auto& target = sys.getParticles().get().data[residue];
         const cartesian& coords = sys.getBox().get().scaleDown( target->getCoordinates());
@@ -234,10 +241,11 @@ template<typename SYSTEM>
 ves::TrajectoryWriterH5::array2d_t ves::TrajectoryWriterH5::getOrientations(const SYSTEM& sys) const
 {
     typedef array2d_t::index index;
+    const index particles_with_orientations = sys.getParticles().get().template numType<ves::Particle::TYPE::MOBILE>() + sys.getParticles().get().template numType<ves::Particle::TYPE::FRAME>();
 
-    array2d_t array(boost::extents[sys.getParticles().get().data.size()][3]);
+    array2d_t array(boost::extents[particles_with_orientations][3]);
 
-    for(index residue = 0; residue < static_cast<index>(sys.getParticles().get().data.size()); ++residue)
+    for(index residue = 0; residue < particles_with_orientations; ++residue)
     {
         const auto& target = sys.getParticles().get().data[residue];
         const cartesian orientation = target->getType() == ves::Particle::TYPE::OSMOTIC ? cartesian(0,0,0) : target->getOrientation().normalized();
@@ -268,6 +276,7 @@ ves::TrajectoryWriterH5::array2d_t ves::TrajectoryWriterH5::getCoordinatesSphere
         const auto& target = sys.getParticles().get().data[residue];
         const cartesian origin = *(target->coordinates_bounding.origin);
         
+        // vesLOG(target->getCoordinates().format(ROWFORMAT));
         if(! target->coordinates_bounding.isSphereBound())
             throw std::runtime_error("particle has no sphere bounds");
 

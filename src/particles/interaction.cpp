@@ -65,5 +65,5 @@ REAL ves::AngularLennardJonesInteraction::calculate(const particle_t& p1, const 
         + std::pow(cartesian( -p1_orien_kappa + distance_vec - p2_orien_kappa ).norm() - c,2)
         + std::pow(cartesian(  p1_orien_kappa + distance_vec + p2_orien_kappa ).norm() - c,2);
     
-    return 4.f*epsilon*(p1.getLJAttraction()*p2.getLJAttraction()*r6*r6-(1.f-chi)*p1.getLJRejection()*p2.getLJRejection()*r6);
+    return 4.f*epsilon*(p1.getLJRejection()*p2.getLJRejection()*r6*r6-(1.f-chi)*p1.getLJAttraction()*p2.getLJAttraction()*r6);
 }

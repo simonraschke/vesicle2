@@ -90,19 +90,24 @@ struct ves::TrajectoryWriterGro
 
     template<typename SYSTEM>
     void write(const SYSTEM& sys)
-    {
-        const auto lines = sys.getParticles().get().template numType<Particle::TYPE::MOBILE>()*2
-                         + sys.getParticles().get().template numType<Particle::TYPE::FRAME>()*2
-                         + sys.getParticles().get().template numType<Particle::TYPE::OSMOTIC>();
+    {   
+        const auto mobil = sys.getParticles().get().template numType<Particle::TYPE::MOBILE>();
+        const auto frame = sys.getParticles().get().template numType<Particle::TYPE::FRAME>();
+        const auto osmot = sys.getParticles().get().template numType<Particle::TYPE::OSMOTIC>();
+        const auto lines = mobil*2 + frame*2 + osmot;
+                
         const auto kappa = ves::Parameters::getInstance().getOption("system.kappa").as<REAL>();
 
         FILE << "t=" << std::fixed << sys.getTime() << '\n';
         FILE << lines << '\n';
         
-        unsigned long atom = 0;
-        for( typename std::remove_const<decltype(lines)>::type residue = 0; residue < lines/2; ++residue)
+        std::size_t atom = 0;
+        std::size_t residue = 0;
+        // for( typename std::remove_const<decltype(lines)>::type residue = 0; residue < lines/2; ++residue)
+        for(const auto& _ptr : sys.getParticles().get())
         {
-            const Particle::Base& particle = std::cref(*sys.getParticles().get().data[residue]);
+            // const Particle::Base& particle = std::cref(*sys.getParticles().get().data[residue]);
+            const Particle::Base& particle = std::cref(*_ptr);
             const auto coords = sys.getBox().get().scaleDown(particle.getCoordinates());
             const auto orientation = /*particle.getType() == Particle::TYPE::OSMOTIC ? decltype(coords)(0,0,0) :*/ particle.getOrientation();
             const auto name = particle.getName();
@@ -165,12 +170,18 @@ struct ves::TrajectoryWriterGro
                 FILE << '\n';
                 ++atom;
             }
+            ++residue;
         }
 
         FILE << sys.getBox().get().getLengthX() << ' ' << sys.getBox().get().getLengthY() << ' ' << sys.getBox().get().getLengthZ();
         FILE << '\n';
 
-        makeStartFileVMD(sys);
+        static bool make_vmdrc = true;
+        if (make_vmdrc)
+        {
+            makeStartFileVMD(sys);
+            make_vmdrc = false;
+        }
     }
 
 
@@ -198,7 +209,7 @@ void ves::TrajectoryWriterGro::makeStartFileVMD(const SYSTEM& sys)
     // STARTER << "vmd" << '\n';
     // STARTER.close();
 
-    const auto lines = sys.getParticles().get().template numType<Particle::TYPE::MOBILE>()*2
+    const auto bonds = sys.getParticles().get().template numType<Particle::TYPE::MOBILE>()*2
                      + sys.getParticles().get().template numType<Particle::TYPE::FRAME>()*2;
 
     FSTREAM VMD;
@@ -267,7 +278,7 @@ void ves::TrajectoryWriterGro::makeStartFileVMD(const SYSTEM& sys)
     VMD << "  $sel delete" << '\n';
     // VMD << "  set mol [mol new atoms 1]" << '\n';
     // VMD << "  set sel [atomselect $mol all]" << '\n';
-    VMD << "  for {set x 0} {$x < " << lines <<"} {incr x} {" << '\n';
+    VMD << "  for {set x 0} {$x < " << bonds <<"} {incr x} {" << '\n';
     VMD << "    set y [expr $x+1]" << '\n';
     VMD << "    set sel [atomselect top \"index $x $y\"]" << '\n';
     VMD << "    incr x 1" << '\n';

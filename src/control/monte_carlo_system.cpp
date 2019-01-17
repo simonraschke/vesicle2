@@ -205,6 +205,7 @@ void ves::MonteCarloSystem::cellStep(const ves::Cell& cell)
         }
 
         // orientation move
+        if(particle->getType() != ves::Particle::TYPE::OSMOTIC)
         {
             // rotation = Eigen::AngleAxis<REAL>(dist_orientation(pseudo_engine), Particle::Base::cartesian::Random());
 
