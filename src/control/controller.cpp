@@ -75,7 +75,7 @@ void ves::Controller::setup()
     vesLOG("ves::Cell                       " << sizeof(ves::Cell));
     vesLOG("ves::CellContainer              " << sizeof(ves::CellContainer));
     vesLOG("ves::Box<PERIODIC::ON>          " << sizeof(ves::Box<PERIODIC::ON>));
-    vesLOG("ves::Box<PERIODIC::Off>         " << sizeof(ves::Box<PERIODIC::OFF>));
+    vesLOG("ves::Box<PERIODIC::OFF>         " << sizeof(ves::Box<PERIODIC::OFF>));
     vesLOG("");
 
 }

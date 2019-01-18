@@ -20,6 +20,7 @@
 #include "particles/particle_container.hpp"
 #include "algorithm/cell_container.hpp"
 #include "algorithm/metropolis.hpp"
+#include "algorithm/grand_canonical.hpp"
 #include "particles/interaction.hpp"
 #include "stepwidth_alignment_unit.hpp"
 #include "io/parameters.hpp"

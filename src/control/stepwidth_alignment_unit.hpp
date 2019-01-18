@@ -41,6 +41,7 @@ public:
     std::size_t getAccepted() const;
     std::size_t getRejected() const;
     float getRatio() const;
+    void setAlignmentEvery(std::size_t);
 
 protected:
     void alignment_check();

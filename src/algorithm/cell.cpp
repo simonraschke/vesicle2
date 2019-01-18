@@ -160,13 +160,13 @@ auto ves::Cell::getListFromParticlesInRegion() const
     std::deque<particle_ptr_t> particles;
     for(const Cell& cell : region)
         for(const particle_ptr_t& particle : cell.data)
-            particles.push_back(particle);
+            particles.emplace_back(particle);
     return particles;
 }
 
 
 
-REAL ves::Cell::potential(const particle_t& particle) const 
+REAL ves::Cell::potentialOfSingleParticle(const particle_t& particle) const 
 {
     return std::accumulate(std::begin(region), std::end(region), REAL(0), [&](REAL __val, const auto& cell)
     {
@@ -175,23 +175,102 @@ REAL ves::Cell::potential(const particle_t& particle) const
             return particle == *compare ? _val : _val + interaction.calculate(particle, *compare);
         });
     });
+    // const auto particles = getListFromParticlesInRegion();
+    // REAL sum = 0;
+    // for(std::size_t i = 0; i < particles.size(); ++i)
+    // {
+    //     if(particle != *particles[i] )
+    //         sum += interaction.calculate(*particles[i], particle);
+    // }
+    // return sum;
 }
 
 
 
 REAL ves::Cell::potentialIgnoreParticle(particle_t& particle) const 
 {
-    const auto particles = getListFromParticlesInRegion();
+    auto particles = getListFromParticlesInRegion();
+    const auto size_before = particles.size();
+    particles.erase(std::remove_if(std::begin(particles), std::end(particles), [&](const particle_ptr_t& comp){ return particle == *comp; }), std::end(particles));
+    if( size_before == particles.size())
+        vesCRITICAL("could not erase particle");
+
     REAL sum = 0;
     for(std::size_t i = 0; i < particles.size(); ++i)
     {
         for(std::size_t j = 0; j<i; ++j)
         {
-            if(*particles[i] != particle && *particles[j] != particle)
+            // if(*particles[i] != particle && *particles[j] != particle)
                 sum += interaction.calculate(*particles[i], *particles[j]);
         }
     }
     return sum;
+}
+
+
+
+//The chemical potential from computer simulation Test particle method with umbrella sampling 
+REAL ves::Cell::chemicalPotentialIgnoreParticle(particle_t& particle) const 
+{
+    auto particles = getListFromParticlesInRegion();
+    const auto size_before = particles.size();
+    particles.erase(std::remove_if(std::begin(particles), std::end(particles), [&](const particle_ptr_t& comp){ return particle == *comp; }), std::end(particles));
+    if( size_before == particles.size())
+        vesCRITICAL("could not erase particle");
+    
+    REAL sum = 0;
+    for(std::size_t i = 0; i < particles.size(); ++i)
+    {
+        for(std::size_t j = 0; j<i; ++j)
+        {
+            // if(*particles[i] != particle && *particles[j] != particle)
+                sum += interaction.calculate(*particles[i], *particles[j]);
+        }
+    }
+    
+    // return complete_sum/(particles.size() - 1);
+    return 0;
+
+
+
+    // return std::exp(-std::accumulate(std::begin(particles), std::end(particles), REAL(0), [&](REAL _val, const auto& compare)
+    // {
+    //     return particle == *compare ? _val : _val + interaction.calculate(particle, *compare);
+    // })/temperature) / (particles.size() - 1);
+
+    
+}
+
+
+
+//The chemical potential from computer simulation Test particle method with umbrella sampling 
+REAL ves::Cell::chemicalPotentialWithPhantomParticle(particle_t& particle) const 
+{
+    auto particles = getListFromParticlesInRegion();
+    if(contains(particle.getCoordinates()))
+    {
+        particles.emplace_back(nonstd::make_observer<particle_t>(&particle));
+    }
+
+    REAL complete_sum = 0;
+    for(const auto& origin : particles)
+    {
+        complete_sum += std::exp( -std::accumulate(std::begin(particles), std::end(particles), REAL(0), [&](REAL _val, const auto& compare)
+        {
+            return origin == compare ? _val : _val + interaction.calculate(*origin, *compare);
+        }) / temperature);
+    }
+    
+    return complete_sum/(particles.size() - 1);
+
+
+
+    // return std::exp(-std::accumulate(std::begin(particles), std::end(particles), REAL(0), [&](REAL _val, const auto& compare)
+    // {
+    //     return particle == *compare ? _val : _val + interaction.calculate(particle, *compare);
+    // })/temperature) / (particles.size() - 1);
+
+    
 }
 
 

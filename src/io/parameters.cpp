@@ -128,7 +128,7 @@ void ves::Parameters::read(int argc, const char* argv[])
     if(getOption("general.ensemble").as<std::string>() == "NVT")
         ves::GLOBAL::getInstance().ensemble = ves::GLOBAL::ENSEMBLE::NVT;
     else if(getOption("general.ensemble").as<std::string>() == "uVT")
-        ves::GLOBAL::getInstance().ensemble = ves::GLOBAL::ENSEMBLE::NVT;
+        ves::GLOBAL::getInstance().ensemble = ves::GLOBAL::ENSEMBLE::uVT;
     else
         vesWARNING("unable to get general.ensemble, setting to NVT");
 

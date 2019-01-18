@@ -66,6 +66,16 @@ ves::ParticleContainer::cartesian ves::ParticleContainer::getRandomValidPoint(RE
 
 
 
+
+auto ves::ParticleContainer::getClosestParticle(const cartesian& c) const -> decltype(std::begin(data))
+{
+    tbb::concurrent_vector<REAL> distances(data.size());
+    tbb::parallel_for(std::size_t(0), data.size(), std::size_t(1), [&](std::size_t i){ distances[i] = box.squared_distance(c, data[i]->getCoordinates()); });
+    return std::begin(data) + std::distance(std::begin(distances), std::min_element(std::begin(distances), std::end(distances)));
+}
+
+
+
 void ves::ParticleContainer::removeParticle(const particle_t& p)
 {
     tbb::mutex::scoped_lock lock(mutex);
@@ -84,6 +94,7 @@ void ves::ParticleContainer::removeParticle(const particle_ptr_t& p)
 
 void ves::ParticleContainer::setupFromNew()
 {
+
     switch (GLOBAL::getInstance().simulationmode.load())
     {
         case GLOBAL::SIMULATIONMODE::SA:
@@ -500,6 +511,8 @@ void ves::ParticleContainer::setupFromH5()
     Parameters::getInstance().mutableAccess().insert(std::make_pair("system.box.z", boost::program_options::variable_value(box.getLengthZ(), false)));
     Parameters::getInstance().mutableAccess().insert(std::make_pair("system.sw_position_actual", boost::program_options::variable_value(h5xx::read_attribute<REAL>(group, "system.sw_position_actual"), false)));
     Parameters::getInstance().mutableAccess().insert(std::make_pair("system.sw_orientation_actual", boost::program_options::variable_value(h5xx::read_attribute<REAL>(group, "system.sw_orientation_actual"), false)));
+    
+    Parameters::getInstance().mutableAccess().insert(std::make_pair("constant.mu", boost::program_options::variable_value(h5xx::read_attribute<REAL>(rootgroup, "constant.mu"), false)));
     
     time_from_input = h5xx::read_attribute<decltype(time_from_input)>(group, "system.actual_time")+1;
     

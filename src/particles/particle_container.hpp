@@ -31,6 +31,8 @@
 #include <type_traits>
 #include <filesystem>
 #include <tbb/mutex.h>
+#include <tbb/parallel_for.h>
+#include <tbb/concurrent_vector.h>
 #include <boost/multi_array.hpp>
 
 #ifdef __clang_major__
@@ -79,6 +81,7 @@ struct ves::ParticleContainer
     void removeParticle(const particle_ptr_t&);
 
     cartesian getRandomValidPoint(REAL) const;
+    auto getClosestParticle(const cartesian&) const -> decltype(std::begin(data));
 
     bool placement_conflict(const Particle::Base&, REAL) const;
     void setup();

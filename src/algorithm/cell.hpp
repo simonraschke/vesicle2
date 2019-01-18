@@ -57,6 +57,8 @@ protected:
     std::vector<std::reference_wrapper<Cell>> proximity {};
     std::vector<std::reference_wrapper<Cell>> region {};
 
+    const REAL temperature = Parameters::getInstance().getOption("system.temperature").as<REAL>();
+
 public:
     Cell();
 
@@ -70,7 +72,9 @@ public:
     void removeParticle(const particle_t&);
     bool try_add(particle_t*);
     auto getLeavers() -> decltype(data);
-    REAL potential(const particle_t&) const;
+    REAL chemicalPotentialIgnoreParticle(particle_t&) const;
+    REAL chemicalPotentialWithPhantomParticle(particle_t&) const;
+    REAL potentialOfSingleParticle(const particle_t&) const;
     REAL potential() const;
     REAL potentialWithPhantomParticle(particle_t&) const;
     REAL potentialIgnoreParticle(particle_t&) const;

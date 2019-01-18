@@ -68,7 +68,8 @@ struct ves::TrajectoryWriterH5
     using array2d_t = boost::multi_array<REAL,2>;
     using cartesian = Particle::Base::cartesian;
 
-    void setup();
+    template<typename SYSTEM>
+    void setup(const SYSTEM&);
 
     template<typename SYSTEM>
     void write(const SYSTEM&);
@@ -94,6 +95,55 @@ protected:
 
     const std::string filetype = {"h5"};
 };
+
+
+
+
+
+
+template<typename SYSTEM>
+void ves::TrajectoryWriterH5::setup(const SYSTEM& sys)
+{
+    file_path = std::filesystem::path( *(enhance::splitAtDelimiter(file_path.string(), ".").rbegin()+1)+"."+filetype );
+    vesDEBUG(__PRETTY_FUNCTION__<< "  " << file_path);
+    try
+    {
+        h5file.close();
+    }
+    catch(...)
+    {
+        vesWARNING("unable to close h5file");
+    }
+
+
+    if(GLOBAL::getInstance().startmode == GLOBAL::STARTMODE::NEW)
+    {
+
+        vesLOG("trunc open " << file_path.string());
+        h5file.open(file_path.string(), h5xx::file::trunc);
+
+        if(GLOBAL::getInstance().ensemble == GLOBAL::ENSEMBLE::uVT)
+        {
+            vesLOG("writing constants")
+            const REAL temperature = Parameters::getInstance().getOption("system.temperature").as<REAL>();
+            const REAL thermal_wavelength_cubic = std::pow(std::sqrt(REAL(1) / (PI*2*temperature)), 3);
+            const REAL mu = -temperature*std::log(sys.getBox().get().getVolume()/(thermal_wavelength_cubic*sys.getParticles().get().data.size()));
+
+            h5xx::group rootgroup(h5file, "/");
+            h5xx::write_attribute(rootgroup, "constant.mu", mu);
+            
+            Parameters::getInstance().mutableAccess().insert(std::make_pair("constant.mu", boost::program_options::variable_value(mu, false)));
+        }
+
+    }
+    else
+    {
+        vesLOG("app open " << file_path.string());
+        h5file.open(file_path.string(), h5xx::file::out);
+    }
+
+}
+
 
 
 

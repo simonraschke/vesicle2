@@ -38,6 +38,6 @@ struct ves::Particle::Osmotic
     }
 
     inline virtual auto getType() const -> TYPE override { return TYPE::OSMOTIC; }
-    inline virtual Osmotic* getDerived() override { return this; };
+    // inline virtual Osmotic* getDerived() override { return this; };
     inline virtual std::string getName() const override { return "OSMOT"; };
 };

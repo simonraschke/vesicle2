@@ -32,6 +32,6 @@ struct ves::Particle::Mobile
     : public Base
 {
     inline virtual auto getType() const -> TYPE override { return TYPE::MOBILE; }
-    inline virtual Mobile* getDerived() override { return this; };
+    // inline virtual Mobile* getDerived() override { return this; };
     inline virtual std::string getName() const override { return "MOBIL"; };
 };

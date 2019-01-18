@@ -32,6 +32,6 @@ struct ves::Particle::Frame
     : public Base
 {
     inline virtual auto getType() const -> TYPE override { return TYPE::FRAME; }
-    inline virtual Frame* getDerived() override { return this; };
+    // inline virtual Frame* getDerived() override { return this; };
     inline virtual std::string getName() const override { return "FRAME"; };
 };

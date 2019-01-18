@@ -85,6 +85,13 @@ std::size_t ves::StepwidhtAlignmentUnit::getRejected() const
 
 
 
+void ves::StepwidhtAlignmentUnit::setAlignmentEvery(std::size_t interval)
+{
+    alignment_every = interval;
+}
+
+
+
 void ves::StepwidhtAlignmentUnit::alignment_check()
 {
     if( !setup_flag )

@@ -50,7 +50,7 @@ namespace ves
 
 
 struct ves::Particle::Base
-    : public ves::Component<Base>
+    // : public ves::Component<Base>
 {
 
     using cartesian = Eigen::Matrix<REAL,3,1>; 
@@ -68,7 +68,7 @@ protected:
 
 public:
     virtual ~Base() = default;
-    inline virtual Base* getDerived() override { return this; };
+    // inline virtual Base* getDerived() override { return this; };
 
     inline bool operator==(Base& other) const { return std::addressof(*this) == std::addressof(other); };
     inline bool operator!=(Base& other) const { return std::addressof(*this) != std::addressof(other); };

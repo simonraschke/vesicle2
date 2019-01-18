@@ -44,10 +44,6 @@ public:
 
     REAL calculate(const particle_t&, const particle_t&) const;
 
-
-protected:
-    ves::Box<PERIODIC::ON> box;
-
     const REAL kappa;
     const REAL a;
     const REAL b;
@@ -55,4 +51,8 @@ protected:
     const REAL sigma;
     const REAL epsilon;
     const REAL cutoff_rez_sq;
+
+protected:
+    ves::Box<PERIODIC::ON> box;
+
 };
