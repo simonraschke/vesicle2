@@ -102,7 +102,7 @@ protected:
 
 
 template<typename SYSTEM>
-void ves::TrajectoryWriterH5::setup(const SYSTEM& sys)
+void ves::TrajectoryWriterH5::setup([[maybe_unused]] const SYSTEM& sys)
 {
     file_path = std::filesystem::path( *(enhance::splitAtDelimiter(file_path.string(), ".").rbegin()+1)+"."+filetype );
     vesDEBUG(__PRETTY_FUNCTION__<< "  " << file_path);
@@ -122,18 +122,18 @@ void ves::TrajectoryWriterH5::setup(const SYSTEM& sys)
         vesLOG("trunc open " << file_path.string());
         h5file.open(file_path.string(), h5xx::file::trunc);
 
-        if(GLOBAL::getInstance().ensemble == GLOBAL::ENSEMBLE::uVT)
-        {
-            vesLOG("writing constants")
-            const REAL temperature = Parameters::getInstance().getOption("system.temperature").as<REAL>();
-            const REAL thermal_wavelength_cubic = std::pow(std::sqrt(REAL(1) / (PI*2*temperature)), 3);
-            const REAL mu = -temperature*std::log(sys.getBox().get().getVolume()/(thermal_wavelength_cubic*sys.getParticles().get().data.size()));
+        // if(GLOBAL::getInstance().ensemble == GLOBAL::ENSEMBLE::uVT)
+        // {
+        //     vesLOG("writing constants")
+        //     const REAL temperature = Parameters::getInstance().getOption("system.temperature").as<REAL>();
+        //     const REAL thermal_wavelength_cubic = std::pow(std::sqrt(REAL(1) / (PI*2*temperature)), 3);
+        //     const REAL mu = -temperature*std::log(sys.getBox().get().getVolume()/(thermal_wavelength_cubic*sys.getParticles().get().data.size()));
 
-            h5xx::group rootgroup(h5file, "/");
-            h5xx::write_attribute(rootgroup, "constant.mu", mu);
+        //     // h5xx::group rootgroup(h5file, "/");
+        //     // h5xx::write_attribute(rootgroup, "constant.mu", mu);
             
-            Parameters::getInstance().mutableAccess().insert(std::make_pair("constant.mu", boost::program_options::variable_value(mu, false)));
-        }
+        //     // Parameters::getInstance().mutableAccess().insert(std::make_pair("constant.mu", boost::program_options::variable_value(mu, false)));
+        // }
 
     }
     else
@@ -170,6 +170,7 @@ void ves::TrajectoryWriterH5::write(const SYSTEM& sys)
         h5xx::write_attribute(group, "system.num_frame_particles", sys.getParticles().get().template numType<ves::Particle::TYPE::FRAME>());
         h5xx::write_attribute(group, "system.num_osmotic_particles", sys.getParticles().get().template numType<ves::Particle::TYPE::OSMOTIC>());
         h5xx::write_attribute(group, "system.num_all_particles", sys.getParticles().get().data.size());
+        h5xx::write_attribute(group, "system.mu", Parameters::getInstance().getOption("system.mu").as<REAL>());
         h5xx::write_attribute(group, "system.box.x", Parameters::getInstance().getOption("system.box.x").as<REAL>());
         h5xx::write_attribute(group, "system.box.y", Parameters::getInstance().getOption("system.box.y").as<REAL>());
         h5xx::write_attribute(group, "system.box.z", Parameters::getInstance().getOption("system.box.z").as<REAL>());

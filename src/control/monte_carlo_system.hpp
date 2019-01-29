@@ -57,6 +57,7 @@ protected:
     std::size_t time {0};
     const std::size_t time_max;
     const std::size_t output_skip;
+    const std::size_t widom_skip;
     
     void cellStep(const ves::Cell&);
     void grandCanonicalStep();

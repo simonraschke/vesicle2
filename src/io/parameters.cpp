@@ -52,6 +52,8 @@ void ves::Parameters::read(int argc, const char* argv[])
         ("system.osmotic_density_outside", po::value<REAL>(), "density of osmotic particles in bulk")
         
         ("system.density,c", po::value<REAL>(), "particle density")
+        ("system.mu", po::value<REAL>()->default_value(0), "chemical potential")
+        ("system.widom_skip", po::value<std::size_t>()->default_value(1), "chemical potential")
         ("system.box.x", po::value<REAL>(), "box edge x")
         ("system.box.y", po::value<REAL>(), "box edge y")
         ("system.box.z", po::value<REAL>(), "box edge z")
@@ -77,6 +79,7 @@ void ves::Parameters::read(int argc, const char* argv[])
     outputOptions.add_options()
         ("output.path",  po::value<PATH>()->default_value("trajectory.h5"), "trajectory.h5")
         ("output.skip",  po::value<std::size_t>()->default_value(10000), "print every .. steps")
+        ("output.suppress_gro", po::bool_switch()->default_value(true), "no .gro output")
     ;
     
     po::options_description inputOptions("Input Options");

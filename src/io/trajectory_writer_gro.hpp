@@ -95,11 +95,23 @@ struct ves::TrajectoryWriterGro
         const auto frame = sys.getParticles().get().template numType<Particle::TYPE::FRAME>();
         const auto osmot = sys.getParticles().get().template numType<Particle::TYPE::OSMOTIC>();
         const auto lines = mobil*2 + frame*2 + osmot;
-                
+        static const std::size_t reservoir = GLOBAL::getInstance().ensemble == GLOBAL::ENSEMBLE::uVT ? std::nearbyint(REAL(sys.getParticles().get().data.size())*10/2)*2 : lines;
         const auto kappa = ves::Parameters::getInstance().getOption("system.kappa").as<REAL>();
 
         FILE << "t=" << std::fixed << sys.getTime() << '\n';
-        FILE << lines << '\n';
+        FILE << reservoir << '\n';
+        // FILE << reservoid*2 << '\n';
+        
+        static std::map<ves::Particle::TYPE, std::string> colorupmap;
+        colorupmap[ves::Particle::TYPE::MOBILE] = "S";
+        colorupmap[ves::Particle::TYPE::FRAME] = "F";
+        colorupmap[ves::Particle::TYPE::OSMOTIC] = "O";
+        colorupmap[ves::Particle::TYPE::UNDEFINED] = "N";
+
+
+        static std::map<ves::Particle::TYPE, std::string> colordownmap;
+        colordownmap[ves::Particle::TYPE::MOBILE] = "C";
+        colordownmap[ves::Particle::TYPE::FRAME] = "F";
         
         std::size_t atom = 0;
         std::size_t residue = 0;
@@ -111,15 +123,6 @@ struct ves::TrajectoryWriterGro
             const auto coords = sys.getBox().get().scaleDown(particle.getCoordinates());
             const auto orientation = /*particle.getType() == Particle::TYPE::OSMOTIC ? decltype(coords)(0,0,0) :*/ particle.getOrientation();
             const auto name = particle.getName();
-            
-            static std::map<ves::Particle::TYPE, std::string> colorupmap;
-            colorupmap[ves::Particle::TYPE::MOBILE] = "S";
-            colorupmap[ves::Particle::TYPE::FRAME] = "F";
-            colorupmap[ves::Particle::TYPE::OSMOTIC] = "O";
-
-            static std::map<ves::Particle::TYPE, std::string> colordownmap;
-            colordownmap[ves::Particle::TYPE::MOBILE] = "C";
-            colordownmap[ves::Particle::TYPE::FRAME] = "F";
 
             if(particle.getType() == Particle::TYPE::OSMOTIC)
             {
@@ -173,20 +176,70 @@ struct ves::TrajectoryWriterGro
             ++residue;
         }
 
+        if(GLOBAL::getInstance().ensemble == GLOBAL::ENSEMBLE::uVT)
+        {
+            while(atom < reservoir)
+            {
+                // FILE << std::setw(5) <<  ++residue;
+                // FILE << std::setw(5) <<  "NONE";
+                // FILE << std::setw(5) <<  colorupmap[ves::Particle::TYPE::UNDEFINED];
+                // FILE << std::setw(5) <<  atom+1;
+                // FILE << std::setprecision(3);
+                // FILE << std::setw(8) <<  -1;
+                // FILE << std::setw(8) <<  -1;
+                // FILE << std::setw(8) <<  -1;
+                // FILE << std::setprecision(4);
+                // FILE << std::setw(8) <<  0.f;
+                // FILE << std::setw(8) <<  0.f;
+                // FILE << std::setw(8) <<  0.f;
+                // FILE << '\n';
+                FILE << std::setw(5) <<  residue+1;
+                FILE << std::setw(5) <<  "MOBIL";
+                FILE << std::setw(5) <<  colorupmap[ves::Particle::TYPE::MOBILE];
+                FILE << std::setw(5) <<  atom+1;
+                FILE << std::setprecision(3);
+                FILE << std::setw(8) <<  -1;
+                FILE << std::setw(8) <<  -1;
+                FILE << std::setw(8) <<  -1;
+                FILE << std::setprecision(4);
+                FILE << std::setw(8) <<  0.f;
+                FILE << std::setw(8) <<  0.f;
+                FILE << std::setw(8) <<  0.f;
+                FILE << '\n';
+                ++atom;
+
+                FILE << std::setw(5) <<  residue+1;
+                FILE << std::setw(5) <<  "MOBIL";
+                FILE << std::setw(5) <<  colordownmap[ves::Particle::TYPE::MOBILE];
+                FILE << std::setw(5) <<  atom+1;
+                FILE << std::setprecision(3);
+                FILE << std::setw(8) <<  -1;
+                FILE << std::setw(8) <<  -1;
+                FILE << std::setw(8) <<  -1;
+                FILE << std::setprecision(4);
+                FILE << std::setw(8) <<  0.f;
+                FILE << std::setw(8) <<  0.f;
+                FILE << std::setw(8) <<  0.f;
+                FILE << '\n';
+                ++atom;
+            }
+            ++residue;
+        }
+
         FILE << sys.getBox().get().getLengthX() << ' ' << sys.getBox().get().getLengthY() << ' ' << sys.getBox().get().getLengthZ();
         FILE << '\n';
 
         static bool make_vmdrc = true;
         if (make_vmdrc)
         {
-            makeStartFileVMD(sys);
+            makeStartFileVMD(sys, reservoir);
             make_vmdrc = false;
         }
     }
 
 
     template<typename SYSTEM>
-    void makeStartFileVMD(const SYSTEM&);
+    void makeStartFileVMD(const SYSTEM&, std::size_t);
     
 
 protected:
@@ -200,7 +253,7 @@ protected:
 
 
 template<typename SYSTEM>
-void ves::TrajectoryWriterGro::makeStartFileVMD(const SYSTEM& sys)
+void ves::TrajectoryWriterGro::makeStartFileVMD(const SYSTEM& sys, std::size_t reservoir)
 {
     vesDEBUG(__PRETTY_FUNCTION__)
     // OFSTREAM STARTER;
@@ -209,7 +262,7 @@ void ves::TrajectoryWriterGro::makeStartFileVMD(const SYSTEM& sys)
     // STARTER << "vmd" << '\n';
     // STARTER.close();
 
-    const auto bonds = sys.getParticles().get().template numType<Particle::TYPE::MOBILE>()*2
+    [[maybe_unused]] const auto bonds = sys.getParticles().get().template numType<Particle::TYPE::MOBILE>()*2
                      + sys.getParticles().get().template numType<Particle::TYPE::FRAME>()*2;
 
     FSTREAM VMD;
@@ -264,21 +317,26 @@ void ves::TrajectoryWriterGro::makeStartFileVMD(const SYSTEM& sys)
     // VMD << "  $sel set name C" << '\n';
     // VMD << "  $sel set type C" << '\n';
     VMD << "  # now we can define colors" << '\n';
-    VMD << "  color Name F 1" << '\n';
-    VMD << "  color Type F 1" << '\n';
+    if(sys.getParticles().get().template numType<Particle::TYPE::FRAME>())
+    {
+        VMD << "  color Name F 1" << '\n';
+        VMD << "  color Type F 1" << '\n';
+    }
     VMD << "  color Name S 23" << '\n';
     VMD << "  color Type S 23" << '\n';
     VMD << "  color Name C 16" << '\n';
     VMD << "  color Type C 16" << '\n';
     VMD << "  color Name O 2" << '\n';
     VMD << "  color Type O 2" << '\n';
+    VMD << "  color Name N 7" << '\n';
+    VMD << "  color Type N 7" << '\n';
     VMD << "  mol delete $mol" << '\n';
 
     VMD << "  # clean up" << '\n';
     VMD << "  $sel delete" << '\n';
     // VMD << "  set mol [mol new atoms 1]" << '\n';
     // VMD << "  set sel [atomselect $mol all]" << '\n';
-    VMD << "  for {set x 0} {$x < " << bonds <<"} {incr x} {" << '\n';
+    VMD << "  for {set x 0} {$x < " << reservoir <<"} {incr x} {" << '\n';
     VMD << "    set y [expr $x+1]" << '\n';
     VMD << "    set sel [atomselect top \"index $x $y\"]" << '\n';
     VMD << "    incr x 1" << '\n';

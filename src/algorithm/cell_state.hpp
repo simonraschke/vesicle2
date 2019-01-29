@@ -46,7 +46,7 @@ private:
 
 inline CellState& CellState::operator=(const STATE& s)
 {
-    state.store(s);
+    state.store(s, std::memory_order_relaxed);
     return *this;
 }
 
@@ -54,26 +54,26 @@ inline CellState& CellState::operator=(const STATE& s)
 
 inline bool CellState::operator==(const CellState& other) const
 {
-    return state.load() == other.state.load();
+    return state.load(std::memory_order_relaxed) == other.state.load(std::memory_order_relaxed);
 }
 
 
 
 inline bool CellState::operator==(STATE other) const
 {
-    return state.load() == other;
+    return state.load(std::memory_order_relaxed) == other;
 }
 
 
 
 inline bool CellState::operator!=(const CellState& other) const
 {
-    return state.load() != other.state.load();
+    return state.load(std::memory_order_relaxed) != other.state.load(std::memory_order_relaxed);
 }
 
 
 
 inline bool CellState::operator!=(STATE other) const
 {
-    return state.load() != other;
+    return state.load(std::memory_order_relaxed) != other;
 }

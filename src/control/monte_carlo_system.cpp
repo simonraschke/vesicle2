@@ -25,6 +25,7 @@ thread_local std::mt19937_64 ves::MonteCarloSystem::pseudo_engine(std::random_de
 ves::MonteCarloSystem::MonteCarloSystem()
     : time_max(ves::Parameters::getInstance().getOption("system.time_max").as<std::size_t>())
     , output_skip(ves::Parameters::getInstance().getOption("output.skip").as<std::size_t>())
+    , widom_skip(ves::Parameters::getInstance().getOption("system.widom_skip").as<std::size_t>())
 {
 
 }
@@ -43,6 +44,7 @@ auto ves::MonteCarloSystem::status()
     ss << std::fixed;
     ss << "step: " << std::setw(10) << std::setprecision(3) << std::right << getTime()  << " | ";
     ss << "particles: " << std::setw(7) << std::setprecision(3) << std::right << particles.data.size() << "  | ";
+    ss << "energy: " << std::setw(10) << std::setprecision(3) << std::right << potential() << "  | ";
     ss << "time: " << std::setw(7) << std::setprecision(3) << std::right << duration << " s  | ";
     ss << " /particle/step: " << std::setw(7) << std::setprecision(3) << std::right << time_per_step/particles.data.size()*1e6 << " ns  | ";
     ss << " /cell/step: " << std::setw(7) << std::setprecision(3) << std::right << time_per_step/cells.data.size()*1e6 << " ns  | ";
@@ -105,7 +107,7 @@ void ves::MonteCarloSystem::setup()
         );
     }
 
-    if(GLOBAL::getInstance().ensemble.load() == GLOBAL::ENSEMBLE::NVT)
+    if(! Parameters::getInstance().getOption("output.suppress_gro").as<bool>())
     {
         traj_gro.setup();
     }
@@ -114,7 +116,7 @@ void ves::MonteCarloSystem::setup()
 
     if(time == 0)
     {
-        if(GLOBAL::getInstance().ensemble.load() == GLOBAL::ENSEMBLE::NVT)
+        if(! Parameters::getInstance().getOption("output.suppress_gro").as<bool>())
         {
             traj_gro.write(*this);
         }
@@ -148,19 +150,23 @@ void ves::MonteCarloSystem::run()
         const auto num_members_should = particles.data.size();
         if(num_members_is!=num_members_should)
         {
-            // Backtrace();
             vesCRITICAL("lost particles while reordering: " << std::boolalpha << (num_members_is==num_members_should) << " found " << num_members_is << " should be " << num_members_should )
         }
 
-        if(time % 1 == 0 and time != 0 && GLOBAL::getInstance().ensemble.load() == GLOBAL::ENSEMBLE::uVT)
+        if(time % widom_skip == 0 and time != 0 && GLOBAL::getInstance().ensemble.load(std::memory_order_relaxed) == GLOBAL::ENSEMBLE::uVT)
+        {
             grandCanonicalStep();
+        }
+
+        if(time % output_skip == 0 or time == 0)
+        {
+            vesLOG(status().str());
+        }
 
         if(time % output_skip == 0 and time != 0)
         {
-            vesLOG(status().str());
-            // vesLOG(time << " took " << duration << " s,  acceptance: " << sw_position.getRatio() << "  " << sw_orientation.getRatio() << "  sw: " << sw_position() << "  " << sw_orientation());
             
-            if(GLOBAL::getInstance().ensemble.load() == GLOBAL::ENSEMBLE::NVT)
+            if(! Parameters::getInstance().getOption("output.suppress_gro").as<bool>())
             {
                 traj_gro.write(*this);
             }
@@ -332,6 +338,9 @@ bool ves::MonteCarloSystem::try_removeParticle()
 
     const auto random_point = box.randomPointInside();
     const auto nearest = particles.getClosestParticle(random_point);
+
+    if(nearest->get()->getType() != ves::Particle::TYPE::MOBILE)
+        return false;
 
     bool is_a_particle = box.squared_distance(random_point, nearest->get()->getCoordinates()) <= optimum_distance_squared;
     if(is_a_particle)

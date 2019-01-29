@@ -132,7 +132,22 @@ void ves::ParticleContainer::setupFromNew()
                 Parameters::getInstance().mutableAccess().insert(std::make_pair("system.box.y", boost::program_options::variable_value(box.getLengthY(), false)));
                 Parameters::getInstance().mutableAccess().insert(std::make_pair("system.box.z", boost::program_options::variable_value(box.getLengthZ(), false)));
             }
-            for(std::size_t i = 0; i < Parameters::getInstance().getOption("system.mobile").as<std::size_t>(); ++i)
+
+            std::size_t mobile;
+            if(Parameters::getInstance().getOptions().count("system.mobile"))
+            {
+                mobile = Parameters::getInstance().getOption("system.mobile").as<std::size_t>();
+            }
+            else if(Parameters::getInstance().getOptions().count("system.density"))
+            {
+                mobile = std::round(box.getVolume()*Parameters::getInstance().getOption("system.density").as<REAL>());
+            }
+            else
+            {
+                vesCRITICAL( "unable to obtain number of mobile particles");
+            }
+
+            for(std::size_t i = 0; i < mobile; ++i)
             {
                 const auto minimum_offset = Parameters::getInstance().getOption("system.ljsigma").as<REAL>();
                 auto particle_it = addParticle<Particle::TYPE::MOBILE>();
@@ -151,7 +166,16 @@ void ves::ParticleContainer::setupFromNew()
         case GLOBAL::SIMULATIONMODE::FGA:
         {
             vesLOG("GLOBAL::SIMULATIONMODE::FGA");
-            const std::size_t mobile = Parameters::getInstance().getOption("system.mobile").as<std::size_t>();
+            std::size_t mobile;
+            try
+            {
+                mobile = Parameters::getInstance().getOption("system.mobile").as<std::size_t>();
+            }
+            catch(const std::exception& e)
+            {
+                vesLOG(e.what());
+            }
+            
             const std::size_t frame_guides_grid_edge = Parameters::getInstance().getOption("system.frame_guides_grid_edge").as<std::size_t>();
             const std::size_t guiding_elements_each = Parameters::getInstance().getOption("system.guiding_elements_each").as<std::size_t>();
             const REAL density = Parameters::getInstance().getOption("system.density").as<REAL>();
@@ -211,6 +235,19 @@ void ves::ParticleContainer::setupFromNew()
             Parameters::getInstance().mutableAccess().insert(std::make_pair("system.box.x", boost::program_options::variable_value(box.getLengthX(), false)));
             Parameters::getInstance().mutableAccess().insert(std::make_pair("system.box.y", boost::program_options::variable_value(box.getLengthY(), false)));
             Parameters::getInstance().mutableAccess().insert(std::make_pair("system.box.z", boost::program_options::variable_value(box.getLengthZ(), false)));
+
+            if(Parameters::getInstance().getOptions().count("system.mobile"))
+            {
+                mobile = Parameters::getInstance().getOption("system.mobile").as<std::size_t>();
+            }
+            else if(Parameters::getInstance().getOptions().count("system.density"))
+            {
+                mobile = std::round(box.getVolume()*Parameters::getInstance().getOption("system.density").as<REAL>());
+            }
+            else
+            {
+                vesCRITICAL( "unable to obtain number of mobile particles");
+            }
 
             switch(GLOBAL::getInstance().fgamode.load())
             {
@@ -512,7 +549,8 @@ void ves::ParticleContainer::setupFromH5()
     Parameters::getInstance().mutableAccess().insert(std::make_pair("system.sw_position_actual", boost::program_options::variable_value(h5xx::read_attribute<REAL>(group, "system.sw_position_actual"), false)));
     Parameters::getInstance().mutableAccess().insert(std::make_pair("system.sw_orientation_actual", boost::program_options::variable_value(h5xx::read_attribute<REAL>(group, "system.sw_orientation_actual"), false)));
     
-    Parameters::getInstance().mutableAccess().insert(std::make_pair("constant.mu", boost::program_options::variable_value(h5xx::read_attribute<REAL>(rootgroup, "constant.mu"), false)));
+    // if(GLOBAL::getInstance().ensemble == GLOBAL::ENSEMBLE::uVT)
+    //     Parameters::getInstance().mutableAccess().insert(std::make_pair("constant.mu", boost::program_options::variable_value(h5xx::read_attribute<REAL>(rootgroup, "constant.mu"), false)));
     
     time_from_input = h5xx::read_attribute<decltype(time_from_input)>(group, "system.actual_time")+1;
     

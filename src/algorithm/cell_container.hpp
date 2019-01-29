@@ -112,37 +112,31 @@ void ves::CellContainer::cellBasedApplyFunctor(FUNCTOR&& func)
 {
     std::shuffle(std::begin(iteration_IDs), std::end(iteration_IDs), pseudo_engine);
     
-    enhance::scoped_root_dummy ROOT;
-
-    while( ! (allInState<CellState::STATE::FINISHED>()) )
     {
-        // enhance::for_each_from(
-        //     begin(), 
-        //     end(),
-        //     begin() + enhance::random<std::size_t>(0, data.size()-1), 
-        //     [&](Cell& cell)
-        for(auto ID : iteration_IDs)
+        enhance::scoped_root_dummy ROOT; 
+        while(! (allInState<CellState::STATE::FINISHED>()) )
         {
-            ves::Cell& cell = data[ID];
-            if( 
-                cell.regionNoneInState<CellState::STATE::BLOCKED>() && 
-                cell.state == CellState::STATE::IDLE
-            )
+            for(auto ID : iteration_IDs)
             {
-                cell.state = CellState::STATE::BLOCKED;
-                
-                assert( cell.state == CellState::STATE::BLOCKED );
-                assert( cell.proximityNoneInState<CellState::STATE::BLOCKED>() );
-                
-                ROOT.enqueue_child( [&]
+                if( ves::Cell& cell = data[ID];
+                    cell.regionNoneInState<CellState::STATE::BLOCKED>() && 
+                    cell.state == CellState::STATE::IDLE
+                )
                 {
+                    cell.state = CellState::STATE::BLOCKED;
+                    
                     assert( cell.state == CellState::STATE::BLOCKED );
-                    func( cell ); 
-                    cell.state = CellState::STATE::FINISHED;
-                    assert( cell.state == CellState::STATE::FINISHED );
-                } );
+                    assert( cell.proximityNoneInState<CellState::STATE::BLOCKED>() );
+                    
+                    ROOT.enqueue_child( [&]
+                    {
+                        assert( cell.state == CellState::STATE::BLOCKED );
+                        func( cell ); 
+                        cell.state = CellState::STATE::FINISHED;
+                        assert( cell.state == CellState::STATE::FINISHED );
+                    } );
+                }
             }
-        // });
         }
     }
     

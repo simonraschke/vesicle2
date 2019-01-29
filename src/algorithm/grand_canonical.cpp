@@ -22,7 +22,8 @@
 
 bool ves::GrandCanonicalInsertion::isValid(const MonteCarloSystem& sys, REAL delta_U) const
 {
-    static const REAL thermal_wavelength_cubic = std::pow(std::sqrt(REAL(1) / (PI*2*temperature)), 3);
+    // static const REAL thermal_wavelength_cubic = std::pow(std::sqrt(REAL(1) / (PI*2*temperature)), 3);
+    static const REAL thermal_wavelength_cubic = 1;
 
     const REAL prob = sys.getBox().get().getVolume() * std::exp(-(delta_U-mu)/temperature) / thermal_wavelength_cubic / (sys.getParticles().get().data.size() + 1);
 
@@ -44,7 +45,8 @@ bool ves::GrandCanonicalInsertion::isValid(const MonteCarloSystem& sys, REAL del
 
 bool ves::GrandCanonicalDeletion::isValid(const MonteCarloSystem& sys, REAL delta_U) const
 {
-    static const REAL thermal_wavelength_cubic = std::pow(std::sqrt(REAL(1) / (PI*2*temperature)), 3);
+    // static const REAL thermal_wavelength_cubic = std::pow(std::sqrt(REAL(1) / (PI*2*temperature)), 3);
+    static const REAL thermal_wavelength_cubic = 1;
 
     const REAL prob = thermal_wavelength_cubic * sys.getParticles().get().data.size() * std::exp(-(delta_U+mu)/temperature) / sys.getBox().get().getVolume();
 

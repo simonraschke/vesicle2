@@ -50,7 +50,7 @@ void ves::Controller::signal(int SIG)
     }
 
     tbb::mutex::scoped_lock lock(Controller::signal_mutex);
-    SIGNAL.store(SIG);
+    SIGNAL.store(SIG, std::memory_order_relaxed);
 }
 
 
