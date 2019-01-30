@@ -28,7 +28,7 @@ from collections import defaultdict
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--file", type=str, default=None, help="path to trajectory file")
-parser.add_argument("--config", type=str, default="config_analysis.ini", help="path to config file")
+parser.add_argument("--config", type=str, default="config.ini", help="path to config file")
 parser.add_argument("--solvent", type=str, nargs='*', default=["OSMOT"], help="solvent selection rule")
 parser.add_argument("--nonsolvent", type=str, nargs='*', default=["MOBIL","FRAME"], help="nonsolvent selection rule")
 parser.add_argument("--clstr_eps", type=float, default=1.2, help="max distance for cluster algorithm")
@@ -37,7 +37,7 @@ parser.add_argument("--stop", type=int, default=10e10, help="starting time of an
 parser.add_argument("--forcenew", action='store_true', help="force new hdf5 file")
 parser.add_argument("--lowmem", action='store_true', help="dont save resname, saves memory BIG TIME")
 parser.add_argument("--timestats", action='store_true', help="show timer statistics")
-parser.add_argument("--reanalyze", action='store_true', help="reanalze from data.h5 file instead of trajectory")
+# parser.add_argument("--reanalyze", action='store_true', help="reanalze from data.h5 file instead of trajectory")
 args = parser.parse_args()
 
 
