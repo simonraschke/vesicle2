@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(vesicle VERSION 2.0.0)
+project(vesicle2 VERSION 2.0.0)
 
 message(WARNING "CMAKE_C_COMPILER: ${CMAKE_C_COMPILER}")
 message(WARNING "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
@@ -17,11 +17,11 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g0 -DNDEBUG -DEIGEN_NO_DEBUG -ffast-math -mtun
 
 ### vesicle
 set(BASIC_SOURCE src/vesicle.cpp)
-add_executable(vesicle ${BASIC_SOURCE})
+add_executable(vesicle2 ${BASIC_SOURCE})
 
-set_target_properties(vesicle PROPERTIES RUNTIME_OUTPUT_DIRECTORY "~/bin/")
-set_target_properties(vesicle PROPERTIES CXX_STANDARD 17)
-target_compile_options(vesicle PRIVATE 
+set_target_properties(vesicle2 PROPERTIES RUNTIME_OUTPUT_DIRECTORY "~/bin/")
+set_target_properties(vesicle2 PROPERTIES CXX_STANDARD 17)
+target_compile_options(vesicle2 PRIVATE 
     -Wall 
     -Wextra 
     -Wpedantic 
@@ -32,6 +32,6 @@ target_compile_options(vesicle PRIVATE
 )
 
 # Link
-target_link_libraries(vesicle vesicle_lib)
+target_link_libraries(vesicle2 vesicle_lib)
 
-install( TARGETS vesicle RUNTIME DESTINATION bin )
+install( TARGETS vesicle2 RUNTIME DESTINATION bin )

@@ -29,7 +29,7 @@
 
 
 
-namespace ves { struct CellContainer; };
+namespace ves { struct CellContainer; }
 
 
 

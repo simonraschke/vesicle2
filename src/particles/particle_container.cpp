@@ -109,7 +109,7 @@ void ves::ParticleContainer::setupFromNew()
                 box.setLengthY(y);
                 box.setLengthZ(z);
             }
-            catch(std::logic_error e)
+            catch(std::logic_error& e)
             {
                 vesLOG("unable to get box from x|y|z, will calculate cubic box from density and mobile particles");
                 try
@@ -122,7 +122,7 @@ void ves::ParticleContainer::setupFromNew()
                     box.setLengthY(edge);
                     box.setLengthZ(edge);
                 }
-                catch(std::logic_error e)
+                catch(std::logic_error& e)
                 {
                     vesCRITICAL("unable to get box from density|mobile, abort");
                 }
@@ -191,7 +191,7 @@ void ves::ParticleContainer::setupFromNew()
                 box.setLengthY(y);
                 box.setLengthZ(z);
             }
-            catch(std::logic_error e)
+            catch(std::logic_error& e)
             {
                 vesLOG("unable to get box from x|y|z, will calculate cubic box from density and particles");
                 try
@@ -226,7 +226,7 @@ void ves::ParticleContainer::setupFromNew()
                             break;
                     }
                 }
-                catch(std::logic_error e)
+                catch(std::logic_error& e)
                 {
                     vesCRITICAL("unable to get box from density|mobile+guiding_elements, abort  ");
                 }
@@ -379,7 +379,7 @@ void ves::ParticleContainer::setupFromNew()
                 box.setLengthY(y);
                 box.setLengthZ(z);
             }
-            catch(std::logic_error e)
+            catch(std::logic_error& e)
             {
                 vesCRITICAL("unable to get box from x|y|z");
             }
@@ -478,7 +478,7 @@ void ves::ParticleContainer::setupFromNew()
 std::vector<std::string> ves::ParticleContainer::getGroupNames()
 {
     vesLOG(__PRETTY_FUNCTION__);
-    auto file_info = [](hid_t loc_id, const char *name, const H5L_info_t * __attribute__((unused)) linfo, void *opdata) -> herr_t
+    auto file_info = [](hid_t loc_id, const char *name, [[maybe_unused]] const H5L_info_t * linfo, void *opdata) -> herr_t
     {
         hid_t group;
         auto group_names = reinterpret_cast< std::vector<std::string>* >(opdata);

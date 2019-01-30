@@ -73,7 +73,7 @@ public:
     inline bool operator==(Base& other) const { return std::addressof(*this) == std::addressof(other); };
     inline bool operator!=(Base& other) const { return std::addressof(*this) != std::addressof(other); };
 
-    inline virtual auto getType() const -> TYPE = 0;
+    virtual auto getType() const -> TYPE = 0;
 
     auto getCoordinates() -> decltype(coordinates)&;
     auto getCoordinates() const -> const decltype(coordinates)&;

@@ -46,4 +46,4 @@ namespace enhance
 
         container_t data;
     };
-};
+}

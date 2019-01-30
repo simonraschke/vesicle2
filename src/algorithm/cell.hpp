@@ -34,7 +34,7 @@
 
 
 
-namespace ves { struct Cell; };
+namespace ves { struct Cell; }
 
 
 

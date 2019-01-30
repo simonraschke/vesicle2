@@ -21,7 +21,7 @@
 
 
 
-namespace ves { class GLOBAL; };
+namespace ves { class GLOBAL; }
 
 
 

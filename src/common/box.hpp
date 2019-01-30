@@ -36,7 +36,7 @@ namespace ves {
     ;
 
     template<PERIODIC P> class Box;
-};
+}
 
 
 
@@ -347,4 +347,4 @@ EIGEN_STRONG_INLINE typename Box<P>::cartesian Box<P>::randomPointInside() const
     );
 }
 
-}; // namespace ves
+} // namespace ves

@@ -38,11 +38,12 @@
 #pragma clang diagnostic pop
 #elif  __GNUC__
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wexceptions"
+// #pragma GCC diagnostic ignored "-Wexceptions"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
 #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
 #pragma GCC diagnostic ignored "-Weffc++"
+#pragma GCC diagnostic ignored "-Wterminate"
 #include "h5xx/h5xx.hpp"
 #pragma GCC diagnostic pop
 #else
@@ -55,7 +56,7 @@ namespace ves
 { 
     struct TrajectoryWriterH5;
     struct MonteCarloSystem;
-};
+}
 
 
 

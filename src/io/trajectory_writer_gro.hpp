@@ -33,7 +33,7 @@ namespace ves
 { 
     struct TrajectoryWriterGro;
     struct MonteCarloSystem;
-};
+}
 
 
 
@@ -244,7 +244,6 @@ struct ves::TrajectoryWriterGro
 protected:
     PATH working_dir {fs::current_path()};
     PATH file_path {ves::Parameters::getInstance().getOption("output.path").as<PATH>()};
-    PATH file_path2 {ves::Parameters::getInstance().getOption("output.psdaath").as<PATH>()};
     FSTREAM FILE {};
 
     const std::string filetype = {"gro"};

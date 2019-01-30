@@ -29,7 +29,7 @@
 
 
 
-namespace ves { struct AngularLennardJonesInteraction; };
+namespace ves { struct AngularLennardJonesInteraction; }
 
 
 
