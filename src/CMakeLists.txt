@@ -30,8 +30,8 @@ target_compile_options(vesicle_lib PRIVATE
     -Wextra 
     -Wpedantic 
     -Weffc++
-    -march=native
-    -mtune=native
+    -march=nocona
+    -mtune=nocona
     -std=c++17
 )
 
