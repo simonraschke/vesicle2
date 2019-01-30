@@ -93,7 +93,7 @@ void ves::Parameters::read(int argc, const char* argv[])
     po::store(po::command_line_parser(argc,argv).options(allOptions).run(),optionsMap);
     po::notify(optionsMap);
 
-    PATH config_file_full_path = std::filesystem::current_path() / config_file_name;
+    PATH config_file_full_path = fs::current_path() / config_file_name;
 
     if(optionsMap.count("help"))
     {
@@ -103,7 +103,7 @@ void ves::Parameters::read(int argc, const char* argv[])
         std::clog << '\n' << inputOptions;
         std::exit(EXIT_SUCCESS);
     }
-    else if(std::filesystem::exists(config_file_full_path) && !config_file_name.empty())
+    else if(fs::exists(config_file_full_path) && !config_file_name.empty())
     {
         try
         {
@@ -122,7 +122,7 @@ void ves::Parameters::read(int argc, const char* argv[])
     ves::GLOBAL::getInstance().simulationstatus = ves::GLOBAL::SIMULATIONSTATUS::PREPARATION;
     ves::GLOBAL::getInstance().acceptance = ves::GLOBAL::ACCEPTANCE::METROPOLIS;
 
-    if(std::filesystem::exists(getOption("input.path").as<PATH>()))
+    if(fs::exists(getOption("input.path").as<PATH>()))
         ves::GLOBAL::getInstance().startmode = ves::GLOBAL::STARTMODE::RESTART;
     else
         ves::GLOBAL::getInstance().startmode = ves::GLOBAL::STARTMODE::NEW;

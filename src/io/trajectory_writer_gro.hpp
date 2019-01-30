@@ -24,7 +24,6 @@
 #include "parameters.hpp"
 #include "particles/base.hpp"
 #include "enhance/output_utility.hpp"
-#include <filesystem>
 #include <memory>
 #include <iomanip>
 
@@ -41,18 +40,18 @@ namespace ves
 struct ves::TrajectoryWriterGro
 {
     using PATH = Parameters::PATH;
-    using FSTREAM = std::ofstream;
+    using FSTREAM = fs::ofstream;
 
     void setup()
     {
-        file_path = std::filesystem::path( *(enhance::splitAtDelimiter(file_path.string(), ".").rbegin()+1)+"."+filetype );
+        file_path = PATH( *(enhance::splitAtDelimiter(file_path.string(), ".").rbegin()+1)+"."+filetype );
         vesDEBUG(__PRETTY_FUNCTION__<< "  " << file_path);
         if(FILE.is_open())
         {
             FILE.close();
         }
 
-        // if(std::filesystem::exists(file_path))
+        // if(fs::exists(file_path))
         // {
         //     // splitting the filepath
         //     auto string_parts = enhance::splitAtDelimiter(file_path.string(), ".");
@@ -65,11 +64,11 @@ struct ves::TrajectoryWriterGro
         //     // std::string filetype = "gro";
 
         //     // making "trajectory_old.gro" from "trajectory.gro"
-        //     PATH destination = std::filesystem::absolute(std::filesystem::path(first_part+filetype));
+        //     PATH destination = fs::absolute(PATH(first_part+filetype));
         //     vesLOG("trajectory file " << file_path.string() << " already exists. will backup to " << destination.string());
 
         //     // and backup the old trajectory
-        //     std::filesystem::copy_file(file_path, destination, std::filesystem::copy_options::overwrite_existing);
+        //     fs::copy_file(file_path, destination, fs::copy_options::overwrite_existing);
         // }
 
         if(GLOBAL::getInstance().startmode == GLOBAL::STARTMODE::NEW)
@@ -243,8 +242,9 @@ struct ves::TrajectoryWriterGro
     
 
 protected:
-    PATH working_dir {std::filesystem::current_path()};
+    PATH working_dir {fs::current_path()};
     PATH file_path {ves::Parameters::getInstance().getOption("output.path").as<PATH>()};
+    PATH file_path2 {ves::Parameters::getInstance().getOption("output.psdaath").as<PATH>()};
     FSTREAM FILE {};
 
     const std::string filetype = {"gro"};

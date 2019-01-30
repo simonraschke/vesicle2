@@ -22,7 +22,7 @@ void ves::ParticleContainer::setup()
 {
     vesDEBUG(__PRETTY_FUNCTION__);
 
-    if(std::filesystem::exists(Parameters::getInstance().getOption("input.path").as<Parameters::PATH>()))
+    if(fs::exists(Parameters::getInstance().getOption("input.path").as<Parameters::PATH>()))
     {
         GLOBAL::getInstance().startmode.store(GLOBAL::STARTMODE::RESTART);
         setupFromH5();

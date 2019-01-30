@@ -21,22 +21,24 @@
 #include "common/definitions.hpp"
 #include "enhance/singleton.hpp"
 #include "enhance/math_utility.hpp"
+#include "enhance/stacktrace.cxx"
 #include "common/global.hpp"
 #include <fstream>
-#include <filesystem>
+#include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <tbb/task_scheduler_init.h>
 
 
 
+namespace fs = boost::filesystem;
 namespace ves { struct Parameters; }
 
 struct ves::Parameters
     : public enhance::Singleton<Parameters>
 {
-    using PATH = std::filesystem::path;
-    using IFSTREAM = std::ifstream;
-    using OFSTREAM = std::ofstream;
+    using PATH = fs::path;
+    using IFSTREAM = fs::ifstream;
+    using OFSTREAM = fs::ofstream;
     
     void read(int, const char* []);
 
@@ -45,7 +47,10 @@ struct ves::Parameters
         if(optionsMap.count(s))
             return optionsMap[s]; 
         else
+        {
+            Backtrace();
             throw std::logic_error("optionsMap does not contain "+s);
+        }
     }
 
     auto& mutableAccess() { return optionsMap; }

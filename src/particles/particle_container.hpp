@@ -29,7 +29,6 @@
 #include <deque>
 #include <memory>
 #include <type_traits>
-#include <filesystem>
 #include <tbb/mutex.h>
 #include <tbb/parallel_for.h>
 #include <tbb/concurrent_vector.h>
@@ -65,7 +64,7 @@ struct ves::ParticleContainer
     using particle_ptr_t = element_t;
     using particle_t = element_t::element_type;
     using PATH = Parameters::PATH;
-    using FSTREAM = std::ofstream;
+    using FSTREAM = fs::ofstream;
     using array1d_t = boost::multi_array<std::uint32_t,1>;
     using array2d_t = boost::multi_array<REAL,2>;
     using cartesian = Particle::Base::cartesian;

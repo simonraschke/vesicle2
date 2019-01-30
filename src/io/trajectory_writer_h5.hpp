@@ -24,7 +24,6 @@
 #include "parameters.hpp"
 #include "particles/base.hpp"
 #include "enhance/output_utility.hpp"
-#include <filesystem>
 #include <type_traits>
 #include <boost/multi_array.hpp>
 
@@ -63,7 +62,7 @@ namespace ves
 struct ves::TrajectoryWriterH5
 {
     using PATH = Parameters::PATH;
-    using FSTREAM = std::ofstream;
+    using FSTREAM = fs::ofstream;
     using array1d_t = boost::multi_array<std::uint32_t,1>;
     using array2d_t = boost::multi_array<REAL,2>;
     using cartesian = Particle::Base::cartesian;
@@ -89,7 +88,7 @@ protected:
     template<typename SYSTEM>
     array2d_t getOrientationBoundaries(const SYSTEM&) const;
 
-    PATH working_dir {std::filesystem::current_path()};
+    PATH working_dir {fs::current_path()};
     PATH file_path {ves::Parameters::getInstance().getOption("output.path").as<PATH>()};
     h5xx::file h5file;
 
@@ -104,7 +103,7 @@ protected:
 template<typename SYSTEM>
 void ves::TrajectoryWriterH5::setup([[maybe_unused]] const SYSTEM& sys)
 {
-    file_path = std::filesystem::path( *(enhance::splitAtDelimiter(file_path.string(), ".").rbegin()+1)+"."+filetype );
+    file_path = PATH( *(enhance::splitAtDelimiter(file_path.string(), ".").rbegin()+1)+"."+filetype );
     vesDEBUG(__PRETTY_FUNCTION__<< "  " << file_path);
     try
     {
