@@ -15,8 +15,8 @@ echo "[BASH] mkdir build"
 mkdir build
 echo "[BASH] cd build"
 cd build
-echo "[BASH] -DCMAKE_BUILD_TYPE=${1}"
-cmake .. -DCMAKE_BUILD_TYPE=$1
+echo "[BASH] -DCMAKE_BUILD_TYPE=${1} -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++"
+cmake .. -DCMAKE_BUILD_TYPE=$1 -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
 echo "[BASH] make -j"
 make -j
 # echo "[BASH] ctest"
