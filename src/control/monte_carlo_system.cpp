@@ -189,9 +189,23 @@ void ves::MonteCarloSystem::cellStep(const ves::Cell& cell)
     std::uniform_real_distribution<REAL> dist_orientation(-sw_orientation(),sw_orientation());
     Particle::Base::cartesian translation;
     Particle::Base::cartesian orientation_before;
-    
-    for(const Cell::particle_ptr_t& particle : cell)
+
+    // std::vector<std::uint32_t> iteration_IDs(cell.data.size());
+    // std::iota(std::begin(iteration_IDs), std::end(iteration_IDs), 0);
+    // std::shuffle(std::begin(iteration_IDs), std::end(iteration_IDs), pseudo_engine);
+
+    std::vector<ves::Cell::container_t::const_iterator> iterators(cell.data.size());
+    std::iota(std::begin(iterators), std::end(iterators), std::begin(cell));
+    std::shuffle(std::begin(iterators), std::end(iterators), pseudo_engine);
+
+
+    // for(const auto num : iteration_IDs)
+    // for(const Cell::particle_ptr_t& particle : iterators)
+    for(const auto& iterator : iterators)
     {
+        // const Cell::particle_ptr_t& particle = std::cref(cell.data[num]);
+        const Cell::particle_ptr_t& particle = *iterator;
+        
         // coordinates move
         {
             translation = Particle::Base::cartesian

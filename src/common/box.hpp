@@ -341,9 +341,9 @@ EIGEN_STRONG_INLINE typename Box<P>::cartesian Box<P>::randomPointInside() const
 {
     return cartesian
     (
-        enhance::random<cartesian::Scalar>(0.f,getLengthX()),
-        enhance::random<cartesian::Scalar>(0.f,getLengthY()),
-        enhance::random<cartesian::Scalar>(0.f,getLengthZ())
+        enhance::random<cartesian::Scalar>()(0.f,getLengthX()),
+        enhance::random<cartesian::Scalar>()(0.f,getLengthY()),
+        enhance::random<cartesian::Scalar>()(0.f,getLengthZ())
     );
 }
 

@@ -129,7 +129,7 @@ auto ves::ParticleContainer::addParticle()
 template<ves::Particle::TYPE T>
 nonstd::observer_ptr<ves::ParticleContainer::particle_t> ves::ParticleContainer::getRandomParticle()
 {
-    const std::size_t random_number = enhance::random<std::size_t>(0, numType<T>() - 1 );
+    const std::size_t random_number = enhance::random<std::size_t>()(0, numType<T>() - 1 );
     const auto first_it = std::find_if(begin(),end(), [](const particle_ptr_t& p){ return p->getType() == T; } );
     return nonstd::make_observer<particle_t>( (first_it + random_number)->get() );
 }

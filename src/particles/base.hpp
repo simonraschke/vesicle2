@@ -56,13 +56,16 @@ struct ves::Particle::Base
     using cartesian = Eigen::Matrix<REAL,3,1>; 
     using box3d = Eigen::AlignedBox<REAL,3>; 
 
+    CoordinatesBounding coordinates_bounding;
+    OrientationBounding orientation_bounding;
+
 protected:
     Base() = default;
 
-    cartesian coordinates = {0,0,0};
-    cartesian orientation = {0,0,0};
     REAL LJ_attraction_intensity = {1};
     REAL LJ_rejection_intensity = {1};
+    cartesian coordinates = {0,0,0};
+    cartesian orientation = {0,0,0};
 
     // nonstd::observer_ptr<Cell> paren_cell {nullptr};
 
@@ -86,9 +89,6 @@ public:
 
     void setLJAttraction(const decltype(LJ_attraction_intensity));
     void setLJRejection(const decltype(LJ_attraction_intensity));
-
-    CoordinatesBounding coordinates_bounding;
-    OrientationBounding orientation_bounding;
     
     virtual bool try_setCoordinates(const cartesian&);
     virtual bool try_setOrientation(const cartesian&);

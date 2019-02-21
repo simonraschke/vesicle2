@@ -23,9 +23,9 @@
 bool ves::GrandCanonicalInsertion::isValid(const MonteCarloSystem& sys, REAL delta_U) const
 {
     // static const REAL thermal_wavelength_cubic = std::pow(std::sqrt(REAL(1) / (PI*2*temperature)), 3);
-    static const REAL thermal_wavelength_cubic = 1;
+    // static const REAL thermal_wavelength_cubic = 1;
 
-    const REAL prob = sys.getBox().get().getVolume() * std::exp(-(delta_U-mu)/temperature) / thermal_wavelength_cubic / (sys.getParticles().get().data.size() + 1);
+    const REAL prob = sys.getBox().get().getVolume() * std::exp(-(delta_U-mu)/temperature) / (sys.getParticles().get().data.size() + 1);
 
     // vesLOG("");
     // vesLOG("INSERTION");
@@ -35,9 +35,9 @@ bool ves::GrandCanonicalInsertion::isValid(const MonteCarloSystem& sys, REAL del
     // // vesLOG("boltzmann " << boltzmann);
     // // vesLOG("cavity_prob " << cavity_prob);
     // vesLOG("prob "<< prob);
-    // vesLOG("return " << std::boolalpha << (std::min(REAL(1),prob) > enhance::random<REAL>(0.0,1.0)));
+    // vesLOG("return " << std::boolalpha << (std::min(REAL(1),prob) > enhance::random<REAL>()(0.0,1.0)));
     // vesLOG("");
-    return std::min(REAL(1),prob) > enhance::random<REAL>(0.0,1.0);
+    return std::min(REAL(1),prob) > enhance::random<REAL>()(0.0,1.0);
 
 }
 
@@ -46,9 +46,9 @@ bool ves::GrandCanonicalInsertion::isValid(const MonteCarloSystem& sys, REAL del
 bool ves::GrandCanonicalDeletion::isValid(const MonteCarloSystem& sys, REAL delta_U) const
 {
     // static const REAL thermal_wavelength_cubic = std::pow(std::sqrt(REAL(1) / (PI*2*temperature)), 3);
-    static const REAL thermal_wavelength_cubic = 1;
+    // static const REAL thermal_wavelength_cubic = 1;
 
-    const REAL prob = thermal_wavelength_cubic * sys.getParticles().get().data.size() * std::exp(-(delta_U+mu)/temperature) / sys.getBox().get().getVolume();
+    const REAL prob = sys.getParticles().get().data.size() * std::exp(-(delta_U+mu)/temperature) / sys.getBox().get().getVolume();
 
     // vesLOG("");
     // vesLOG("DELETION");
@@ -58,8 +58,8 @@ bool ves::GrandCanonicalDeletion::isValid(const MonteCarloSystem& sys, REAL delt
     // // vesLOG("boltzmann " << boltzmann);
     // // vesLOG("cavity_prob " << cavity_prob);
     // vesLOG("prob "<< prob);
-    // vesLOG("return " << std::boolalpha << (std::min(REAL(1),prob) > enhance::random<REAL>(0.0,1.0)));
+    // vesLOG("return " << std::boolalpha << (std::min(REAL(1),prob) > enhance::random<REAL>()(0.0,1.0)));
     // vesLOG("");
-    return std::min(REAL(1),prob) > enhance::random<REAL>(0.0,1.0);
+    return std::min(REAL(1),prob) > enhance::random<REAL>()(0.0,1.0);
 
 }

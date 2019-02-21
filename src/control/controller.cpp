@@ -63,19 +63,21 @@ void ves::Controller::setup()
     
     vesLOG("");
     vesLOG("SIZE OF DATA STRUCTURES");
-    vesLOG("int                             " << sizeof(int));
-    vesLOG("float                           " << sizeof(float));
-    vesLOG("REAL                            " << sizeof(REAL));
-    vesLOG("ves::Particle::Base::cartesian  " << sizeof(ves::Particle::Base::cartesian));
-    vesLOG("ves::Particle::Base             " << sizeof(ves::Particle::Base));
-    vesLOG("ves::Particle::Mobile           " << sizeof(ves::Particle::Mobile));
-    vesLOG("ves::Particle::Frame            " << sizeof(ves::Particle::Frame));
-    vesLOG("ves::Particle::Osmotic          " << sizeof(ves::Particle::Osmotic));
-    vesLOG("ves::ParticleContainer          " << sizeof(ves::ParticleContainer));
-    vesLOG("ves::Cell                       " << sizeof(ves::Cell));
-    vesLOG("ves::CellContainer              " << sizeof(ves::CellContainer));
-    vesLOG("ves::Box<PERIODIC::ON>          " << sizeof(ves::Box<PERIODIC::ON>));
-    vesLOG("ves::Box<PERIODIC::OFF>         " << sizeof(ves::Box<PERIODIC::OFF>));
+    vesLOG(std::setw(30) << std::left << "int" << std::setw(4) << std::right << sizeof(int) << std::setw(4) << std::right << alignof(int));
+    vesLOG(std::setw(30) << std::left << "float" << std::setw(4) << std::right << sizeof(float) << std::setw(4) << std::right << alignof(float));
+    vesLOG(std::setw(30) << std::left << "REAL" << std::setw(4) << std::right << sizeof(REAL) << std::setw(4) << std::right << alignof(REAL));
+    vesLOG(std::setw(30) << std::left << "ves::Particle::Base::cartesian" << std::setw(4) << std::right << sizeof(ves::Particle::Base::cartesian) << std::setw(4) << std::right << alignof(ves::Particle::Base::cartesian));
+    vesLOG(std::setw(30) << std::left << "ves::CoordinatesBounding" << std::setw(4) << std::right << sizeof(ves::CoordinatesBounding) << std::setw(4) << std::right << alignof(ves::CoordinatesBounding));
+    vesLOG(std::setw(30) << std::left << "ves::OrientationBounding" << std::setw(4) << std::right << sizeof(ves::OrientationBounding) << std::setw(4) << std::right << alignof(ves::OrientationBounding));
+    vesLOG(std::setw(30) << std::left << "ves::Particle::Base" << std::setw(4) << std::right << sizeof(ves::Particle::Base) << std::setw(4) << std::right << alignof(ves::Particle::Base));
+    vesLOG(std::setw(30) << std::left << "ves::Particle::Mobile" << std::setw(4) << std::right << sizeof(ves::Particle::Mobile) << std::setw(4) << std::right << alignof(ves::Particle::Mobile));
+    vesLOG(std::setw(30) << std::left << "ves::Particle::Frame" << std::setw(4) << std::right << sizeof(ves::Particle::Frame) << std::setw(4) << std::right << alignof(ves::Particle::Frame));
+    vesLOG(std::setw(30) << std::left << "ves::Particle::Osmotic" << std::setw(4) << std::right << sizeof(ves::Particle::Osmotic) << std::setw(4) << std::right << alignof(ves::Particle::Osmotic));
+    vesLOG(std::setw(30) << std::left << "ves::ParticleContainer" << std::setw(4) << std::right << sizeof(ves::ParticleContainer) << std::setw(4) << std::right << alignof(ves::ParticleContainer));
+    vesLOG(std::setw(30) << std::left << "ves::Cell" << std::setw(4) << std::right << sizeof(ves::Cell) << std::setw(4) << std::right << alignof(ves::Cell));
+    vesLOG(std::setw(30) << std::left << "ves::CellContainer" << std::setw(4) << std::right << sizeof(ves::CellContainer) << std::setw(4) << std::right << alignof(ves::CellContainer));
+    vesLOG(std::setw(30) << std::left << "ves::Box<PERIODIC::ON>" << std::setw(4) << std::right << sizeof(ves::Box<PERIODIC::ON>) << std::setw(4) << std::right << alignof(ves::Box<PERIODIC::ON>));
+    vesLOG(std::setw(30) << std::left << "ves::Box<PERIODIC::OFF>" << std::setw(4) << std::right << sizeof(ves::Box<PERIODIC::OFF>) << std::setw(4) << std::right << alignof(ves::Box<PERIODIC::OFF>));
     vesLOG("");
 
 }

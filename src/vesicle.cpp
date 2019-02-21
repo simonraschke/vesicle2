@@ -24,7 +24,6 @@
 #include <tbb/task_scheduler_init.h>
 
 
-
 auto main(int argc, const char *argv[]) -> int
 {
     // register important signals in Controller base class
@@ -44,20 +43,10 @@ auto main(int argc, const char *argv[]) -> int
     ves::Parameters::getInstance().read(argc,argv);
     vesDEBUG( ves::Parameters::getInstance().getOption("system.time_max").as<std::size_t>() );
 
-    
-
     tbb::task_scheduler_init init(ves::Parameters::getInstance().getOption("general.cpu_threads").as<std::size_t>() );
     
     ves::Controller controller;
     controller.setup();
-    // ves::AngularLennardJonesInteraction inter;
-    // ves::Particle::Mobile m1;
-    // m1.getCoordinates() = ves::Particle::Base::cartesian(0,0,0);
-    // m1.getOrientation() = ves::Particle::Base::cartesian(0,0,1).normalized();
-    // ves::Particle::Mobile m2;
-    // m2.getCoordinates() = ves::Particle::Base::cartesian(1.1224,0,0);
-    // m2.getOrientation() = ves::Particle::Base::cartesian(0,0,1).normalized();
-    // vesCRITICAL(inter.calculate(m1, m2));
     controller.start();
 
     return EXIT_SUCCESS;

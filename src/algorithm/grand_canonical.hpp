@@ -39,6 +39,7 @@ struct ves::GrandCanonicalInsertion
 protected:
     const REAL temperature = Parameters::getInstance().getOption("system.temperature").as<REAL>();
     const REAL mu = Parameters::getInstance().getOption("system.mu").as<REAL>();
+    // const REAL thermal_wavelength_cubic = 1;
 };
 
 
@@ -50,6 +51,7 @@ struct ves::GrandCanonicalDeletion
 protected:
     const REAL temperature = Parameters::getInstance().getOption("system.temperature").as<REAL>();
     const REAL mu = Parameters::getInstance().getOption("system.mu").as<REAL>();
+    // const REAL thermal_wavelength_cubic = 1;
 };
 
 
