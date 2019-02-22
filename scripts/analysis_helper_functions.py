@@ -95,9 +95,9 @@ def getShiftedCoordinates(ID, group, eps, dimensions, alg="dbscan"):
     shifts = np.round(( -centers + centers.loc[max_subclusterID] )/dimensions[:3]).astype(int)
     shifts *= dimensions[:3]
 
-    coms_subcluster = pd.concat([group['x'], group['y'], group['z']], axis=1)
-    distances_array_subcluster = distance_array(coms_subcluster.values, coms_subcluster.values, box=None)
-    dbscan_subcluster = DBSCAN(min_samples=1, eps=eps, metric="precomputed", n_jobs=-1).fit(distances_array_subcluster)
+    # coms_subcluster = pd.concat([group['x'], group['y'], group['z']], axis=1)
+    # distances_array_subcluster = distance_array(coms_subcluster.values, coms_subcluster.values, box=None)
+    # dbscan_subcluster = DBSCAN(min_samples=1, eps=eps, metric="precomputed", n_jobs=-1).fit(distances_array_subcluster)
     # np.set_printoptions(threshold=np.nan, linewidth=np.nan, precision=1)
     # calculate new coordinates based on shift
     if alg == "dbscan":

@@ -34,4 +34,6 @@
 # Other
 .vscode/
 build/
-__pycache__
+*_pycache_*
+*__pycache__*
+*.pyc
