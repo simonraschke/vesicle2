@@ -93,5 +93,7 @@ public:
     virtual bool try_setCoordinates(const cartesian&);
     virtual bool try_setOrientation(const cartesian&);
 
+    void forcefullyShift(const cartesian&);
+
     virtual std::string getName() const = 0;
 };

@@ -104,3 +104,12 @@ bool ves::Particle::Base::try_setOrientation(const cartesian& o)
     }
     else return false;
 }
+
+
+
+void ves::Particle::Base::forcefullyShift(const cartesian& s)
+{
+    coordinates += s;
+    coordinates_bounding.forcefullyShift(s);
+    orientation_bounding.forcefullyShift(s);
+}

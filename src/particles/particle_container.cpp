@@ -66,12 +66,23 @@ ves::ParticleContainer::cartesian ves::ParticleContainer::getRandomValidPoint(RE
 
 
 
-
 auto ves::ParticleContainer::getClosestParticle(const cartesian& c) const -> decltype(std::begin(data))
 {
     tbb::concurrent_vector<REAL> distances(data.size());
     tbb::parallel_for(std::size_t(0), data.size(), std::size_t(1), [&](std::size_t i){ distances[i] = box.squared_distance(c, data[i]->getCoordinates()); });
     return std::begin(data) + std::distance(std::begin(distances), std::min_element(std::begin(distances), std::end(distances)));
+}
+
+
+
+void ves::ParticleContainer::shiftAll(const cartesian& shift_vector)
+{
+    tbb::parallel_for_each(std::begin(data), std::end(data), [&shift_vector](const auto& particle_ptr)
+    {
+        if(!particle_ptr)
+            vesCRITICAL("particle_ptr" << particle_ptr.get());
+        particle_ptr->forcefullyShift(shift_vector);
+    });
 }
 
 

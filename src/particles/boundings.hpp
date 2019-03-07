@@ -47,6 +47,7 @@ public:
 
     virtual ~Bounding() = default;
     virtual bool isAllowed(const decltype(origin)::element_type&) = 0;
+    virtual void forcefullyShift(const Eigen::Matrix<REAL,3,1>&) = 0;
 };
 
 
@@ -74,6 +75,12 @@ struct ves::OrientationBounding
             return allowed;
         }
     };
+
+    virtual void forcefullyShift(const Eigen::Matrix<REAL,3,1>& s) override
+    {
+        if(origin)
+            origin->operator+=(s);
+    }
 };
 
 
@@ -148,6 +155,18 @@ struct ves::CoordinatesBounding
         bounding_box = std::make_unique<Eigen::AlignedBox<REAL,3>>(std::move(_box));
         sphere_bounds.reset(nullptr);
     };
+
+
+
+    virtual void forcefullyShift(const Eigen::Matrix<REAL,3,1>& s) override
+    {
+        if(origin)
+            origin->operator+=(s);
+        if(bounding_box)
+            bounding_box->translate(s);
+    }
+
+
 
     inline bool isBoxBound() const { return static_cast<bool>(bounding_box); };
     inline bool isSphereBound() const { return static_cast<bool>(sphere_bounds); };

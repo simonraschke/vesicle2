@@ -31,6 +31,7 @@
 #include <type_traits>
 #include <tbb/mutex.h>
 #include <tbb/parallel_for.h>
+#include <tbb/parallel_for_each.h>
 #include <tbb/concurrent_vector.h>
 #include <boost/multi_array.hpp>
 
@@ -86,6 +87,8 @@ struct ves::ParticleContainer
 
     cartesian getRandomValidPoint(REAL) const;
     auto getClosestParticle(const cartesian&) const -> decltype(std::begin(data));
+
+    void shiftAll(const cartesian&);
 
     bool placement_conflict(const Particle::Base&, REAL) const;
     void setup();
