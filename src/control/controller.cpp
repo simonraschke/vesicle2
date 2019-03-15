@@ -35,16 +35,16 @@ void ves::Controller::signal(int SIG)
     
     if(got_called == 1)
     {
-        vesWARNING(__PRETTY_FUNCTION__ << " recieverd SIGNAL " << SIG)
+        vesWARNING(__PRETTY_FUNCTION__ << " recieved SIGNAL " << SIG)
     }
     else if (got_called == 2)
     {
-        vesWARNING(__PRETTY_FUNCTION__ << " recieverd SIGNAL " << SIG)
+        vesWARNING(__PRETTY_FUNCTION__ << " recieved SIGNAL " << SIG)
         vesWARNING(__PRETTY_FUNCTION__ << " still trying civilized shutdown...")
     }
     else if (got_called == 3)
     {
-        vesWARNING(__PRETTY_FUNCTION__ << " recieverd SIGNAL " << SIG)
+        vesWARNING(__PRETTY_FUNCTION__ << " recieved SIGNAL " << SIG)
         vesWARNING(__PRETTY_FUNCTION__ << " TERMINATING!")
         std::exit(SIG);
     }
