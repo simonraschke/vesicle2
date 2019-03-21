@@ -37,7 +37,11 @@ namespace enhance
         template<typename U>
         Point<T>& operator=(const Point<U>& other);
 
-        T operator[](std::size_t i);
+        T& operator[](std::size_t i);
+        T operator[](std::size_t i) const;
+
+        T& operator()(std::size_t i);
+        T operator()(std::size_t i) const;
         
         template<typename U>
         const Point<T> operator+(const Point<U>& other) const;
@@ -57,6 +61,11 @@ namespace enhance
         void normalize();
         Point<T> normalized() const;
 
+        template<typename U>
+        T dot(const Point<U>& other) const;
+
+        template<typename U>
+        Point<T> cross(const Point<U>& other) const;
 
 
     protected:
@@ -104,7 +113,31 @@ namespace enhance
 
 
     template<typename T>
-    T Point<T>::operator[](std::size_t i)
+    T& Point<T>::operator[](std::size_t i)
+    {
+        return data[i];
+    }
+    
+
+
+    template<typename T>
+    T Point<T>::operator[](std::size_t i) const
+    {
+        return data[i];
+    }
+    
+
+
+    template<typename T>
+    T& Point<T>::operator()(std::size_t i) 
+    {
+        return data[i];
+    }
+    
+
+
+    template<typename T>
+    T Point<T>::operator()(std::size_t i) const
     {
         return data[i];
     }
@@ -189,4 +222,24 @@ namespace enhance
     }
 
 
+
+    template<typename T>
+    template<typename U>
+    T Point<T>::dot(const Point<U>& other) const
+    {
+        return std::inner_product(std::begin(data), std::end(data), std::begin(other.data), static_cast<T>(0.0));
+    }
+
+
+
+    template<typename T>
+    template<typename U>
+    Point<T> Point<T>::cross(const Point<U>& other) const
+    {
+        return Point<T>(
+            data[1]*other[2] - data[2]*other[1],
+            data[2]*other[0] - data[0]*other[2],
+            data[0]*other[1] - data[1]*other[0]
+        );
+    }
 } // namespace enhance 
