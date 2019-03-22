@@ -28,14 +28,42 @@ namespace enhance
     template<typename T = float>
     struct Point
     {
+        Point();
         Point(T value);
         Point(T x, T y, T z);
 
         template<typename U>
         Point(const Point<U>& other);
-        
+
+        Point(const Point<T>& other) = default;
+        Point(Point<T>&& other) = default;
+
+        Point<T>& operator=(const Point<T>& other) = default;;
+        Point<T>& operator=(Point<T> &&) = default;
+
+        inline auto begin()         { return std::begin(data); };
+        inline auto end()           { return std::end(data); };
+        inline auto begin() const   { return std::begin(data); };
+        inline auto end()   const   { return std::end(data); };
+        inline auto cbegin() const  { return std::cbegin(data); };
+        inline auto cend()   const  { return std::cend(data); };
+        inline auto rbegin()        { return std::rbegin(data); };
+        inline auto rend()          { return std::rend(data); };
+        inline auto rbegin() const  { return std::rbegin(data); };
+        inline auto rend()   const  { return std::rend(data); };
+        inline auto crbegin() const { return std::crbegin(data); };
+        inline auto crend()   const { return std::crend(data); };
+
+        // change data element wise directly
+        template<typename UNARY_FUNCTOR>
+        void unaryApply(const UNARY_FUNCTOR& unary);
+
+        // make a copy of data, change copy and return copy
+        template<typename UNARY_FUNCTOR>
+        const Point<T> unaryExpr(const UNARY_FUNCTOR& unary) const;
+
         template<typename U>
-        Point<T>& operator=(const Point<U>& other);
+        Point<U> cast() const;
 
         T& operator[](std::size_t i);
         T operator[](std::size_t i) const;
@@ -75,6 +103,20 @@ namespace enhance
 
 
     template<typename T>
+    Point<T>::Point()
+        : data(
+        {
+            static_cast<T>(0), 
+            static_cast<T>(0), 
+            static_cast<T>(0)
+        })
+    {
+
+    }
+
+
+
+    template<typename T>
     Point<T>::Point(T value)
         : data({value, value, value})
     {
@@ -94,22 +136,36 @@ namespace enhance
 
     template<typename T>
     template<typename U>
-    Point<T>::Point(const Point<U>& other)
-        : data(std::copy_n( std::begin(other.data), 3, std::begin(data)))
+    Point<U> Point<T>::cast() const
     {
-        
+        return Point<U>
+        (
+            static_cast<U>(data[0]),
+            static_cast<U>(data[1]),
+            static_cast<U>(data[2])
+        );
     }
-    
+
 
 
     template<typename T>
-    template<typename U>
-    Point<T>& Point<T>::operator=(const Point<U>& other)
+    template<typename UNARY_FUNCTOR>
+    const Point<T> Point<T>::unaryExpr(const UNARY_FUNCTOR& unary) const
     {
-        data = other.data;
-        return data;
+        auto copy = Point<T>(*this);
+        std::for_each(std::begin(copy.data), std::end(copy.data), unary);
+        return copy;
     }
-    
+
+
+
+    template<typename T>
+    template<typename UNARY_FUNCTOR>
+    void Point<T>::unaryApply(const UNARY_FUNCTOR& unary)
+    {
+        std::for_each(std::begin(data), std::end(data), unary);
+    }
+
 
 
     template<typename T>
@@ -216,7 +272,7 @@ namespace enhance
     template<typename T>
     Point<T> Point<T>::normalized() const
     {
-        Point<T> copy = *this;
+        auto copy = Point<T>(*this);
         copy.normalize();
         return copy;
     }
