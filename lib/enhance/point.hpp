@@ -1,5 +1,5 @@
 /*  
-*   Copyright 2017-2018 Simon Raschke
+*   Copyright 2019 Simon Raschke
 *
 *   Licensed under the Apache License, Version 2.0 (the "License");
 *   you may not use this file except in compliance with the License.
@@ -25,8 +25,27 @@
 
 namespace enhance 
 { 
+    namespace __internal
+    {
+        template
+        <
+            typename T, 
+            typename ENABLER = typename std::enable_if
+            <
+                std::is_arithmetic<T>::value
+            , void>::type
+        >
+        struct ArithmeticEnabler
+        {
+            using element_t = T;
+        };
+    } // namespace __internal
+
+
+
     template<typename T = float>
     struct Point
+        : public __internal::ArithmeticEnabler<T>
     {
         Point();
         Point(T value);
@@ -38,21 +57,23 @@ namespace enhance
         Point(const Point<T>& other) = default;
         Point(Point<T>&& other) = default;
 
+        constexpr void swap( Point<T>& other ) noexcept(std::is_nothrow_swappable_v<T>);
+
         Point<T>& operator=(const Point<T>& other) = default;;
         Point<T>& operator=(Point<T> &&) = default;
 
         inline auto begin()         { return std::begin(data); };
         inline auto end()           { return std::end(data); };
-        inline auto begin() const   { return std::begin(data); };
-        inline auto end()   const   { return std::end(data); };
-        inline auto cbegin() const  { return std::cbegin(data); };
-        inline auto cend()   const  { return std::cend(data); };
+        constexpr inline auto begin() const   { return std::begin(data); };
+        constexpr inline auto end()   const   { return std::end(data); };
+        constexpr inline auto cbegin() const  { return std::cbegin(data); };
+        constexpr inline auto cend()   const  { return std::cend(data); };
         inline auto rbegin()        { return std::rbegin(data); };
         inline auto rend()          { return std::rend(data); };
-        inline auto rbegin() const  { return std::rbegin(data); };
-        inline auto rend()   const  { return std::rend(data); };
-        inline auto crbegin() const { return std::crbegin(data); };
-        inline auto crend()   const { return std::crend(data); };
+        constexpr inline auto rbegin() const  { return std::rbegin(data); };
+        constexpr inline auto rend()   const  { return std::rend(data); };
+        constexpr inline auto crbegin() const { return std::crbegin(data); };
+        constexpr inline auto crend()   const { return std::crend(data); };
 
         // change data element wise directly
         template<typename UNARY_FUNCTOR>
@@ -66,10 +87,10 @@ namespace enhance
         Point<U> cast() const;
 
         T& operator[](std::size_t i);
-        T operator[](std::size_t i) const;
+        constexpr T operator[](std::size_t i) const;
 
         T& operator()(std::size_t i);
-        T operator()(std::size_t i) const;
+        constexpr T operator()(std::size_t i) const;
         
         template<typename U>
         const Point<T> operator+(const Point<U>& other) const;
@@ -149,6 +170,14 @@ namespace enhance
 
 
     template<typename T>
+    constexpr void Point<T>::swap( Point<T>& other ) noexcept(std::is_nothrow_swappable_v<T>)
+    {
+        data.swap(other.data);
+    }
+
+
+
+    template<typename T>
     template<typename UNARY_FUNCTOR>
     const Point<T> Point<T>::unaryExpr(const UNARY_FUNCTOR& unary) const
     {
@@ -177,7 +206,7 @@ namespace enhance
 
 
     template<typename T>
-    T Point<T>::operator[](std::size_t i) const
+    constexpr T Point<T>::operator[](std::size_t i) const
     {
         return data[i];
     }
@@ -193,7 +222,7 @@ namespace enhance
 
 
     template<typename T>
-    T Point<T>::operator()(std::size_t i) const
+    constexpr T Point<T>::operator()(std::size_t i) const
     {
         return data[i];
     }
@@ -299,3 +328,14 @@ namespace enhance
         );
     }
 } // namespace enhance 
+
+
+
+namespace std
+{
+    template<class T>
+    constexpr void swap( enhance::Point<T>& lhs, enhance::Point<T>& rhs ) noexcept(noexcept(lhs.swap(rhs)))
+    {
+        lhs.swap(rhs);
+    }
+}
