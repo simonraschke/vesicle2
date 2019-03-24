@@ -50,5 +50,8 @@ auto main(int argc, const char *argv[]) -> int
     controller.setup();
     controller.start();
 
-    return EXIT_SUCCESS;
+    if(ves::Controller::SIGNAL.load() != 0)
+        return ves::Controller::SIGNAL.load();
+    else
+        return EXIT_SUCCESS;
 }
