@@ -40,6 +40,8 @@ auto main(int argc, const char *argv[]) -> int
     std::signal( SIGFPE,  ves::Controller::signal );
     std::signal( SIGKILL, ves::Controller::signal );
     std::signal( SIGTERM, ves::Controller::signal );
+    std::signal( SIGUSR1, ves::Controller::signal );
+    std::signal( SIGUSR2, ves::Controller::signal );
 
     ves::Parameters::getInstance().read(argc,argv);
     vesDEBUG( ves::Parameters::getInstance().getOption("system.time_max").as<std::size_t>() );
