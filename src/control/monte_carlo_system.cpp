@@ -143,13 +143,15 @@ void ves::MonteCarloSystem::run()
         cells.cellBasedApplyFunctor([&](const auto& c){ cellStep(c);});
         
         const auto shift_vector = ves::Particle::Base::cartesian::Random()*Parameters::getInstance().getOption("system.ljsigma").as<REAL>();
-        // vesLOG(shift_vector.format(ROWFORMAT));
-        particles.shiftAll(shift_vector);
+        if(GLOBAL::getInstance().simulationmode.load(std::memory_order_relaxed) == GLOBAL::SIMULATIONMODE::SA)
+        {
+            particles.shiftAll(shift_vector);
+            // vesLOG(shift_vector.format(ROWFORMAT));
+        }
 
         vesDEBUG("reorder cells");
         cells.reorder();
         assert(cells.membersContained()==particles.data.size());
-
 
         const auto num_members_is = cells.membersContained();
         const auto num_members_should = particles.data.size();
