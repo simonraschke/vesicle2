@@ -327,17 +327,29 @@ void ves::ParticleContainer::setupFromNew()
                     ves::PlaneGeometry plane(guiding_elements_per_dimension, guiding_elements_per_dimension);
                     plane.scale(cartesian(scaling_factor, scaling_factor, 0));
                     plane.shift(shift_vec);
-
-                    const auto box_min = cartesian(box.getLengthX()/2-plane_edge_half, box.getLengthY()/2-plane_edge_half, box.getLengthZ()/2-ljsigma/2);
-                    const auto box_max = cartesian(box.getLengthX()/2+plane_edge_half, box.getLengthY()/2+plane_edge_half, box.getLengthZ()/2+ljsigma/2);
-                    const ves::Particle::Base::box3d frame_bounds(box_min, box_max);
                     
                     vesLOG("will setup plane with " << plane.points.size() << " particles and initial distance of " << scaling_factor);
 
                     for(const auto& point : plane.points)
                     {
                         auto particle_it = addParticle<Particle::TYPE::FRAME>();
-                        particle_it->get()->coordinates_bounding.setBoundingBox(ves::Particle::Base::box3d(frame_bounds));
+                        if(Parameters::getInstance().getOption("system.guiding_elements_restriction").as<std::string>() == "inplace")
+                        {
+                            vesDEBUG("binding guiding element to sphere from " << 0 << " to " << ljsigma);
+                            particle_it->get()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(point));
+                            particle_it->get()->coordinates_bounding.setBoundingSphere(0, ljsigma);
+                        }
+                        else if(Parameters::getInstance().getOption("system.guiding_elements_restriction").as<std::string>() == "structure")
+                        {
+                            const auto box_min = cartesian(box.getLengthX()/2-plane_edge_half, box.getLengthY()/2-plane_edge_half, box.getLengthZ()/2-ljsigma/2);
+                            const auto box_max = cartesian(box.getLengthX()/2+plane_edge_half, box.getLengthY()/2+plane_edge_half, box.getLengthZ()/2+ljsigma/2);
+                            const ves::Particle::Base::box3d frame_bounds(box_min, box_max);
+                            vesDEBUG("binding guiding element to box from " << box_min.format(ROWFORMAT) << " to " << box_max.format(ROWFORMAT));
+                            particle_it->get()->coordinates_bounding.setBoundingBox(ves::Particle::Base::box3d(frame_bounds));
+                        }
+                        else
+                            vesCRITICAL("could not set bounding to guiding element");
+
                         bool worked = particle_it->get()->try_setCoordinates(point);
                         if(!worked)
                             vesCRITICAL("setting Particle::Frame coordinates to point did not work");
