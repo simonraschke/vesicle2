@@ -17,22 +17,25 @@
 #pragma once
 
 #include "geometry.hpp"
+#include "common/definitions.hpp"
+#include "enhance/math_utility.hpp"
 
 
 
-struct ves::GridGeometry
+struct ves::HelixGeometry
     :public ves::Geometry
 {    
-    GridGeometry();
-    GridGeometry(std::size_t, std::size_t, std::size_t);
+    HelixGeometry();
+    HelixGeometry(float _height, float _radius, std::size_t _size);
 
     virtual void generate() override;
     virtual void scale(const cartesian&) override;
     virtual void shift(const cartesian&) override;
-    cartesian& matrixView(const std::size_t&, const std::size_t&, const std::size_t&);
-    const cartesian& matrixView(const std::size_t&, const std::size_t&, const std::size_t&) const;
 
-    std::size_t x {1};
-    std::size_t y {1};
-    std::size_t z {1};
+    // cartesian origin {cartesian::Zero()};
+    float height {10.0};
+    float radius {1.0};
+    std::size_t size {100};
+
+    std::ostream& print(std::ostream&) const;
 };

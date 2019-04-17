@@ -23,6 +23,7 @@
 #include "particles/osmotic.hpp"
 #include "geometries/sphere_grid.hpp"
 #include "geometries/plane.hpp"
+#include "geometries/tube.hpp"
 #include "io/parameters.hpp"
 #include "enhance/container_class_base.hpp"
 #include "observer_ptr.hpp"

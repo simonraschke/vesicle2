@@ -37,7 +37,7 @@ void ves::Parameters::read(int argc, const char* argv[])
         ("general.acceptance", po::value<std::string>()->default_value("metropolis"), "[metropolis]")
         ("general.ensemble", po::value<std::string>()->default_value("NVT"), "[NVT, uVT]")
         ("general.simulation_mode", po::value<std::string>()->default_value("SA"), "[SA,FGA,OSMOTIC]")
-        ("general.fga_mode", po::value<std::string>()->default_value("plane"), "[sphere,plane]")
+        ("general.fga_mode", po::value<std::string>()->default_value("plane"), "[sphere,plane, tube]")
     ;
     
     po::options_description systemOptions("System Options");
@@ -46,6 +46,7 @@ void ves::Parameters::read(int argc, const char* argv[])
 
         ("system.guiding_elements_each", po::value<std::size_t>(), "number of guiding elements per frame guide")
         ("system.guiding_elements_restriction", po::value<std::string>()->default_value("inplace"), "restriction of guiding elemets [inplace,structure]")
+        // ("system.guiding_elements_distance", po::value<REAL>(), "preferred distance of guiding elements")
         ("system.frame_guides_grid_edge", po::value<std::size_t>(), "number of frame guides per dimension")
         ("system.plane_edge", po::value<REAL>(), "number of guiding elements in plane")
         
@@ -141,6 +142,8 @@ void ves::Parameters::read(int argc, const char* argv[])
         ves::GLOBAL::getInstance().fgamode = ves::GLOBAL::FGAMODE::SPHERE;
     else if(getOption("general.fga_mode").as<std::string>() == "plane")
         ves::GLOBAL::getInstance().fgamode = ves::GLOBAL::FGAMODE::PLANE;
+    else if(getOption("general.fga_mode").as<std::string>() == "tube")
+        ves::GLOBAL::getInstance().fgamode = ves::GLOBAL::FGAMODE::TUBE;
     else
         vesWARNING("unable to get general.fga_mode, setting to plane");
 

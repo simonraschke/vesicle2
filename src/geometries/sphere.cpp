@@ -1,5 +1,5 @@
 /*  
-*   Copyright 2017-2018 Simon Raschke
+*   Copyright 2017-2019 Simon Raschke
 *
 *   Licensed under the Apache License, Version 2.0 (the "License");
 *   you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@
 #include "sphere.hpp"
 
 
-std::ostream& operator<<(std::ostream& os, const ves::SphereGeometry& sphere)
+std::ostream& ves::SphereGeometry::print(std::ostream& os) const
 {   
-    os << "SphereGeometry at " << sphere.origin.format(ROWFORMAT) << " with radius " << sphere.radius << " and " << sphere.points.size() << " points\n";
-    for(const auto& point : sphere.points)
+    os << "SphereGeometry at " << origin.format(ROWFORMAT) << " with radius " << radius << " and " << points.size() << " points\n";
+    for(const auto& point : points)
         os << "point: " <<point.format(ROWFORMAT) << '\n';
     return os;
 }
@@ -125,7 +125,7 @@ void ves::SphereGeometry::generate()
         for(std::size_t i = 0; i < size; ++i)
         {
             // Distributing many points on a sphere
-            if ( i == 0 )                  
+            if ( i == 0 )
             { 
                 // first particle fix
                 phi = 0.0; 

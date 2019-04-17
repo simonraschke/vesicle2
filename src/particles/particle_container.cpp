@@ -375,6 +375,49 @@ void ves::ParticleContainer::setupFromNew()
                     break;
                 }
 
+                case GLOBAL::FGAMODE::TUBE:
+                {
+                    vesLOG("GLOBAL::FGAMODE::TUBE");
+
+                    auto tube = ves::TubeGeometry();
+                    tube.height = box.getLengthZ()/(guiding_elements_each+1)*guiding_elements_each;
+                    tube.size = guiding_elements_each;
+                    tube.radius = ljsigma * std::pow(2,1.f/6) / enhance::deg_to_rad(15.f);
+                    tube.generate();
+                    tube.shift(cartesian(0, 0, box.getLengthZ()/(guiding_elements_each)/2));
+
+                    tube.shift(cartesian(box.getLengthX()/2, box.getLengthY()/2, 0));
+                    for(const auto& point : tube.points)
+                    {
+                        auto particle_it = addParticle<Particle::TYPE::FRAME>();
+                        particle_it->get()->coordinates_bounding.origin = std::make_unique<cartesian>(point);
+                        particle_it->get()->coordinates_bounding.setBoundingSphere(0, ljsigma);
+                        bool worked = particle_it->get()->try_setCoordinates(point);
+                        if(!worked)
+                            vesCRITICAL("setting Particle::Frame coordinates to point did not work");
+
+                        const auto center = cartesian(box.getLengthX()/2, box.getLengthY()/2, point(2));
+                        worked = particle_it->get()->try_setOrientation(point-center);
+                        particle_it->get()->orientation_bounding.value = PI_4;
+                        if(!worked)
+                            vesCRITICAL("setting Particle::Frame orientation to point did not work");
+                    }
+
+                    for(std::size_t i = 0; i < mobile; ++i)
+                    {
+                        const auto minimum_offset = ljsigma;
+                        auto particle_it = addParticle<Particle::TYPE::MOBILE>();
+                        do
+                        {
+                            particle_it->get()->try_setCoordinates(box.randomPointInside());
+                        }
+                        while(placement_conflict(*(particle_it->get()), minimum_offset));
+                        while(!particle_it->get()->try_setOrientation(ves::Particle::Base::cartesian::Random().normalized())){;}
+                    }
+                    
+                    break;
+                }
+
                 default:
                     vesCRITICAL("encountered invalde FGAMODE during particle generation");
                     break;

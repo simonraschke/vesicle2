@@ -1,5 +1,5 @@
 /*  
-*   Copyright 2017-2018 Simon Raschke
+*   Copyright 2017-2019 Simon Raschke
 *
 *   Licensed under the Apache License, Version 2.0 (the "License");
 *   you may not use this file except in compliance with the License.
@@ -38,6 +38,9 @@ namespace ves
     struct PlaneGeometry;
     struct SphereGeometry;
     struct SphereGridGeometry;
+    struct HelixGeometry;
+    struct CircleGeometry;
+    struct TubeGeometry;
 }
 
 

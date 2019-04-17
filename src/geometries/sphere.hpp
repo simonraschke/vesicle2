@@ -1,5 +1,5 @@
 /*  
-*   Copyright 2017-2018 Simon Raschke
+*   Copyright 2017-2019 Simon Raschke
 *
 *   Licensed under the Apache License, Version 2.0 (the "License");
 *   you may not use this file except in compliance with the License.
@@ -36,5 +36,5 @@ struct ves::SphereGeometry
     float radius {1.0};
     std::size_t size {100};
 
-    friend std::ostream& operator<<(std::ostream&, const SphereGeometry&);
+    std::ostream& print(std::ostream&) const;
 };

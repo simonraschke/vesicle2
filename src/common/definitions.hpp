@@ -47,3 +47,13 @@ constexpr const double TWOPI = 3.14159265358979323846*2;
 //-------------------Eigen::IOFormat( prec, flag,                 coeffSep, rowSep, rowPre, rowSuf, matPre, matSuf )
 #define ROWFORMAT    Eigen::IOFormat( 3,    Eigen::DontAlignCols, ", ",     " ",    " ",    "",     " ",    " " )
 #define PYTHONFORMAT Eigen::IOFormat( 4,    0,                    ", ",     "\n",   "[",    "]",    "[",    "]" )
+
+
+
+#include <iostream>
+template<typename T>
+auto operator<<(std::ostream& os, const T& t) -> decltype(t.print(os), os) 
+{ 
+    t.print(os);
+    return os;
+}

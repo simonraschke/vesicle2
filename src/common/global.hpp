@@ -18,6 +18,7 @@
 
 #include "enhance/singleton.hpp"
 #include <atomic>
+#include <iostream>
 
 
 
@@ -44,6 +45,6 @@ public:
     enum class SIMULATIONMODE { SA, FGA, OSMOTIC };
     std::atomic<SIMULATIONMODE> simulationmode {SIMULATIONMODE::SA};
 
-    enum class FGAMODE { SPHERE, PLANE };
+    enum class FGAMODE { SPHERE, PLANE, TUBE };
     std::atomic<FGAMODE> fgamode {FGAMODE::PLANE};
 };
