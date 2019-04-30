@@ -142,12 +142,12 @@ void ves::MonteCarloSystem::run()
         vesDEBUG("do MC step");
         cells.cellBasedApplyFunctor([&](const auto& c){ cellStep(c);});
         
-        const auto shift_vector = ves::Particle::Base::cartesian::Random()*Parameters::getInstance().getOption("system.ljsigma").as<REAL>();
-        if(GLOBAL::getInstance().simulationmode.load(std::memory_order_relaxed) == GLOBAL::SIMULATIONMODE::SA)
-        {
-            particles.shiftAll(shift_vector);
-            // vesLOG(shift_vector.format(ROWFORMAT));
-        }
+        // const auto shift_vector = ves::Particle::Base::cartesian::Random()*Parameters::getInstance().getOption("system.ljsigma").as<REAL>();
+        // if(GLOBAL::getInstance().simulationmode.load(std::memory_order_relaxed) == GLOBAL::SIMULATIONMODE::SA)
+        // {
+        //     particles.shiftAll(shift_vector);
+        //     // vesLOG(shift_vector.format(ROWFORMAT));
+        // }
 
         vesDEBUG("reorder cells");
         cells.reorder();

@@ -316,8 +316,10 @@ void ves::ParticleContainer::setupFromNew()
                     const std::size_t guiding_elements_per_dimension = std::sqrt(guiding_elements_each);
                     const auto plane_edge = Parameters::getInstance().getOption("system.plane_edge").as<REAL>();
                     const auto plane_edge_half = plane_edge/2;
-                    const auto scaling_factor = plane_edge / (guiding_elements_per_dimension-1);
-                    const auto shift_vec = cartesian(box.getLengthX()/2-plane_edge_half, box.getLengthY()/2-plane_edge_half, box.getLengthZ()/2);
+                    const auto scaling_factor = plane_edge / (guiding_elements_per_dimension);
+                    // const auto scaling_factor = plane_edge / (guiding_elements_per_dimension-1);
+                    const auto shift_vec = cartesian(box.getLengthX()/2-plane_edge_half+scaling_factor/2, box.getLengthY()/2-plane_edge_half+scaling_factor/2, box.getLengthZ()/2);
+                    // const auto shift_vec = cartesian(box.getLengthX()/2-plane_edge_half, box.getLengthY()/2-plane_edge_half, box.getLengthZ()/2);
 
                     if(guiding_elements_per_dimension*guiding_elements_per_dimension != guiding_elements_each)
                     {
@@ -332,6 +334,7 @@ void ves::ParticleContainer::setupFromNew()
 
                     for(const auto& point : plane.points)
                     {
+                        vesLOG(point.format(ROWFORMAT));
                         auto particle_it = addParticle<Particle::TYPE::FRAME>();
                         if(Parameters::getInstance().getOption("system.guiding_elements_restriction").as<std::string>() == "inplace")
                         {
