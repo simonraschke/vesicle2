@@ -20,10 +20,13 @@
 #include "particles/base.hpp"
 #include "enhance/random.hpp"
 #include <memory>
-#if __has_include(<Eigen/Core>)
-#include <Eigen/Geometry>
-#elif __has_include(<eigen3/Eigen/Core>)
-#include <eigen3/Eigen/Geometry>
+
+#if __has_include(<eigen3/Eigen/Geometry>)
+    #include <eigen3/Eigen/Geometry>
+#elif __has_include(<Eigen/Geometry>)
+    #include <Eigen/Geometry>
+#else
+    #pragma error "no eigen include"
 #endif
 
 

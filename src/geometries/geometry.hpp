@@ -21,12 +21,21 @@
 #include "common/definitions.hpp"
 #include <cmath>
 #include <vector>
-#if __has_include(<Eigen/Core>)
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-#elif __has_include(<eigen3/Eigen/Core>)
-#include <eigen3/Eigen/Core>
-#include <eigen3/Eigen/Geometry>
+
+#if __has_include(<eigen3/Eigen/Core>)
+    #include <eigen3/Eigen/Core>
+#elif __has_include(<Eigen/Core>)
+    #include <Eigen/Core>
+#else
+    #pragma error "no eigen include"
+#endif
+
+#if __has_include(<eigen3/Eigen/Geometry>)
+    #include <eigen3/Eigen/Geometry>
+#elif __has_include(<Eigen/Geometry>)
+    #include <Eigen/Geometry>
+#else
+    #pragma error "no eigen include"
 #endif
 
 

@@ -20,8 +20,13 @@
 #include "common/definitions.hpp"
 #include "common/component.hpp"
 
-// #include <eigen3/Eigen/Core>
-#include <eigen3/Eigen/Geometry>
+#if __has_include(<eigen3/Eigen/Geometry>)
+    #include <eigen3/Eigen/Geometry>
+#elif __has_include(<Eigen/Geometry>)
+    #include <Eigen/Geometry>
+#else
+    #pragma error "no eigen include"
+#endif
 #include <cmath>
 #include <memory>
 #include <exception>
