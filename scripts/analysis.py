@@ -6,10 +6,6 @@ import argparse
 import re
 import numpy as np
 import pandas as pd
-# import MDAnalysis as mda
-import matplotlib as mpl
-mpl.use('qt5agg')
-import matplotlib.pyplot as plt
 import h5py
 import pprint
 import shutil
@@ -18,7 +14,6 @@ import sklearn
 import time
 import analysis_helper_functions as helper
 
-from mpl_toolkits.mplot3d import Axes3D
 from sklearn.cluster import DBSCAN
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
@@ -70,6 +65,13 @@ resname_map = defaultdict(lambda : -1, {
     "OSMOT" : 2
 })
 
+ge_restriction_map = defaultdict(lambda : -1, {
+    "inplace" : 0,
+    "structure" : 1
+})
+
+
+
 attributes_setup_done = False
 
 t_start = time.perf_counter()
@@ -94,6 +96,8 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
 
     if not attributes_setup_done:
         _attributes = pd.DataFrame(helper.getAttributeDict(args.config, dimensions[:3]))
+        fga_mode = _attributes['fga_mode'].values[0]
+        simulation_mode = _attributes['simulation_mode'].values[0]
         datafile["attributes"] = _attributes
         attributes_setup_done = True
 
@@ -127,14 +131,13 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     distances_array = distance_array(relevant_positions.values, relevant_positions.values, box=dimensions)
     dbscan = DBSCAN(min_samples=2, eps=args.clstr_eps, metric="precomputed", n_jobs=-1).fit(distances_array)
     labels = pd.DataFrame(np.append(dbscan.labels_, np.full(np.count_nonzero(~relevant_cond), -2)), columns=['cluster'])
-    # add to data and sort for cluster id
     particledata["cluster"] = labels
 
     unique, counts = np.unique(labels, return_counts=True)
     particledata["clustersize"] = particledata["cluster"].apply( lambda x: counts[np.where(unique == x)][0] if x >= 0 else 1 )
     particledata.loc[particledata["cluster"] == -1, "clustersize"] = 1
 
-    if args.timestats: print(f"prep took     {time.perf_counter()-t_prep:.4f} seconds")
+    if args.timestats: print(f"\nprep took             {time.perf_counter()-t_prep:.4f} seconds")
 
 
 
@@ -142,12 +145,9 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     subcluster identification
     """
     t_sub = time.perf_counter()
-    particledata["subcluster"] = -1
-    for ID, group in particledata[relevant_cond].groupby(["cluster"], as_index=False):
-        subclusters = helper.getSubclusterLabels(ID, group, args.clstr_eps)
-        particledata.loc[group.index, "subcluster"] = subclusters
+    particledata.loc[relevant_cond.index, "subcluster"] = particledata[relevant_cond].groupby("cluster", group_keys=False).apply(lambda g: helper.getSubclusterLabels(g, args.clstr_eps))["subcluster"]
 
-    if args.timestats: print(f"subclstr took {time.perf_counter()-t_sub:.4f} seconds")
+    if args.timestats: print(f"subclstr took         {time.perf_counter()-t_sub:.4f} seconds")
 
 
 
@@ -159,25 +159,33 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     particledata["shifty"] = np.where(relevant_cond, particledata["y"], np.nan)
     particledata["shiftz"] = np.where(relevant_cond, particledata["z"], np.nan)
     for ID, group in particledata[relevant_cond].groupby("cluster"):
-        newx, newy, newz = helper.getShiftedCoordinates(ID, group, args.clstr_eps, dimensions[:3])
-        particledata.loc[newx.index, "shiftx"] = newx.values
-        particledata.loc[newy.index, "shifty"] = newy.values
-        particledata.loc[newz.index, "shiftz"] = newz.values
-    
-    if args.timestats: print(f"shift took    {time.perf_counter()-t_shift:.4f} seconds")
+        shifted_coordinates = helper.getShiftedCoordinates(group, args.clstr_eps, dimensions[:3])
+        particledata.loc[shifted_coordinates.index, ["shiftx","shifty","shiftz"]] = shifted_coordinates
+    if args.timestats: print(f"shift took            {time.perf_counter()-t_shift:.4f} seconds")
 
+
+
+    """
+    special analysis of plane in case of planar fga
+    """
+    if simulation_mode == "FGA":
+        t_fga_plane = time.perf_counter()
+        particledata["in_structure"] = False
+        particledata["in_structure_cluster"] = False
+        particledata.loc[relevant_cond, "in_structure"] = helper.isParticleInStructure(particledata[relevant_cond], attributes, dimensions, fga_mode)
+        particledata.loc[relevant_cond, "in_structure_cluster"] = helper.isParticleInStructureCluster(particledata[relevant_cond], attributes)
+        
+        if args.timestats: print(f"plane fga case took   {time.perf_counter()-t_fga_plane:.4f} seconds")
+        # print(particledata)
 
 
     """
     get the order of particle in cluster
     """
     t_order = time.perf_counter()
-    particledata["order"] = np.nan
-    for ID, group in particledata[relevant_cond].groupby("cluster"):
-        orders = helper.getOrder(ID, group)
-        particledata.loc[group.index, "order"] = orders
+    particledata.loc[relevant_cond.index, "order"] = particledata[relevant_cond].groupby("cluster", group_keys=False).apply(lambda g: helper.getOrder(g, attributes))["order"]
     
-    if args.timestats: print(f"order took    {time.perf_counter()-t_order:.4f} seconds")
+    if args.timestats: print(f"order took            {time.perf_counter()-t_order:.4f} seconds")
 
 
 
@@ -192,7 +200,7 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
         if volume / np.cumprod(dimensions[:3])[-1] > 0.9:
             raise Exception(f"volume of cluster {ID} is {volume / np.cumprod(dimensions[:3])[-1]} of box volume")
     
-    if args.timestats: print(f"volume took   {time.perf_counter()-t_volume:.4f} seconds")
+    if args.timestats: print(f"volume took           {time.perf_counter()-t_volume:.4f} seconds")
 
 
     
@@ -212,7 +220,17 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     """
     t_curvature = time.perf_counter()
     particledata["curvature"] = np.append(helper.getCurvature(particledata[relevant_cond], dimensions, cutoff=1.3), np.full(np.count_nonzero(~relevant_cond), np.nan))
+    particledata.loc[particledata["order"].isna(), "curvature"] = np.nan
     if args.timestats: print(f"curvature took        {time.perf_counter()-t_curvature:.4f} seconds")
+
+
+
+    """
+    calculate the surface tension for every particle
+    """
+    # t_tension = time.perf_counter()
+    # particledata["tension"] = np.append(helper.getSurfaceTension(particledata[relevant_cond], dimensions, epot_calc, cutoff=3.0), np.full(np.count_nonzero(~relevant_cond), np.nan))
+    # if args.timestats: print(f"surface tension took  {time.perf_counter()-t_tension:.4f} seconds")
 
 
 
@@ -221,11 +239,14 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
 
     t_write = time.perf_counter()
     datafile[f"time{actual_time}"] = particledata
-    if args.timestats: print(f"write took    {time.perf_counter()-t_write:.4f} seconds")
+    if args.timestats: print(f"write took            {time.perf_counter()-t_write:.4f} seconds")
     
     t_end = time.perf_counter()
     print(f"time {actual_time} took {t_end-t_start:.4f} seconds")
     t_start = time.perf_counter()
+
+    print(particledata.head(40))
+    # sys.exit()
 
     # print(datafile[f"time{actual_time}"])
 

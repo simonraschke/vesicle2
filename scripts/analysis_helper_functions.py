@@ -37,10 +37,37 @@ def fileValueFromKeyword(filepath, keyword, seperator='='):
 
 
 
+# iterate a file linewise
+# check line for keyword
+# if keyword is found return value after seperator
+def fileStringFromKeyword(filepath, keyword, seperator='='):
+    found_counter = 0
+    assert(filepath)
+    value = [np.NaN]
+    try:
+        with open(filepath) as FILE:
+            for line in FILE:
+                if keyword in line:
+                    found_counter += 1
+                    value = [str(line.split(seperator,1)[1].rstrip())]
+                    break
+    except:
+        pass
+    if found_counter == 0:
+        print(Warning("unable to find keyword "+keyword+" in file "+filepath+"\n"))
+        # raise Warning("unable to find keyword "+keyword+" in file "+filepath+"\n")
+    # if found_counter >= 2:
+        # raise Exception("multiple keywords "+keyword+" in file "+filepath+"\n")
+    return value
+
+
+
 def getAttributeDict(filename, dimensions):
     return {
         'mobile': fileValueFromKeyword(filename, 'mobile', '='),
         'density': fileValueFromKeyword(filename, 'density', '='),
+        'fga_mode': fileStringFromKeyword(filename, 'fga_mode', '='),
+        'simulation_mode': fileStringFromKeyword(filename, 'simulation_mode', '='),
         'boxx': dimensions[0],
         'boxy': dimensions[1],
         'boxz': dimensions[2],
@@ -65,27 +92,49 @@ def getAttributeDict(filename, dimensions):
 
 
 
-def getSubclusterLabels(ID, group, eps):
+# def getSubclusterLabels(ID, group, eps):
+#     #skip if noise
+#     if ID == -1:
+#         return np.zeros( len(group.index), dtype=int )
+#     else:
+#         # arange a DBSCAN without PBC to get subclusters
+#         coms_subcluster = pd.concat([group['x'], group['y'], group['z']], axis=1)
+#         distances_array_subcluster = distance_array(coms_subcluster.values, coms_subcluster.values, box=None)
+#         subclusterd = DBSCAN(min_samples=1, eps=eps, metric="precomputed", n_jobs=-1).fit(distances_array_subcluster)
+#         return subclusterd.labels_
+
+
+
+def getSubclusterLabels(group, eps):
+    group["subcluster"] = 0
+    if group["cluster"].unique() == -1:
+        return group
     #skip if noise
-    if ID == -1:
-        return np.zeros( len(group.index), dtype=int )
+    # if ID == -1:
+    #     return np.zeros( len(group.index), dtype=int )
     else:
         # arange a DBSCAN without PBC to get subclusters
-        coms_subcluster = pd.concat([group['x'], group['y'], group['z']], axis=1)
-        distances_array_subcluster = distance_array(coms_subcluster.values, coms_subcluster.values, box=None)
-        subclusterd = DBSCAN(min_samples=1, eps=eps, metric="precomputed", n_jobs=-1).fit(distances_array_subcluster)
-        return subclusterd.labels_
+        coms = group.filter(["x","y","z"])
+        distances_array = distance_array(coms.values, coms.values, box=None)
+        group["subcluster"] = DBSCAN(min_samples=1, eps=eps, metric="precomputed", n_jobs=-1).fit(distances_array).labels_
+        # print(group)
+        return group
+
+        # coms_subcluster = pd.concat([group['x'], group['y'], group['z']], axis=1)
+        # distances_array_subcluster = distance_array(coms_subcluster.values, coms_subcluster.values, box=None)
+        # subclusterd = DBSCAN(min_samples=1, eps=eps, metric="precomputed", n_jobs=-1).fit(distances_array_subcluster)
+        # return subclusterd.labels_
 
 
 
-def getShiftedCoordinates(ID, group, eps, dimensions, alg="dbscan"):
+def getShiftedCoordinates(group, eps, dimensions, alg="dbscan"):
     # get largest subcluster
     if alg == "dbscan":
         unique, counts = np.unique(group["subcluster"], return_counts=True)
     elif alg == "hdbscan":
         unique, counts = np.unique(group["h_subcluster"], return_counts=True)
     if len(unique) == 1:
-        return group["x"], group["y"], group["z"]
+        return group[["shiftx","shifty","shiftz"]]
     max_subclusterID = unique[counts == np.max(counts)][0]
     # calculate shifts per subcluster
     if alg == "dbscan":
@@ -94,22 +143,8 @@ def getShiftedCoordinates(ID, group, eps, dimensions, alg="dbscan"):
         centers = group.groupby("h_subcluster")['x','y','z'].mean()
     shifts = np.round(( -centers + centers.loc[max_subclusterID] )/dimensions[:3]).astype(int)
     shifts *= dimensions[:3]
-
-    # coms_subcluster = pd.concat([group['x'], group['y'], group['z']], axis=1)
-    # distances_array_subcluster = distance_array(coms_subcluster.values, coms_subcluster.values, box=None)
-    # dbscan_subcluster = DBSCAN(min_samples=1, eps=eps, metric="precomputed", n_jobs=-1).fit(distances_array_subcluster)
-    # np.set_printoptions(threshold=np.nan, linewidth=np.nan, precision=1)
-    # calculate new coordinates based on shift
-    if alg == "dbscan":
-        newx = np.add(group["x"], shifts.loc[group["subcluster"]]["x"])
-        newy = np.add(group["y"], shifts.loc[group["subcluster"]]["y"])
-        newz = np.add(group["z"], shifts.loc[group["subcluster"]]["z"])
-    elif alg == "hdbscan":
-        newx = np.add(group["x"], shifts.loc[group["h_subcluster"]]["x"])
-        newy = np.add(group["y"], shifts.loc[group["h_subcluster"]]["y"])
-        newz = np.add(group["z"], shifts.loc[group["h_subcluster"]]["z"])
-    # assign to main data
-    return newx, newy, newz
+    shifted_coordinates = group[["shiftx","shifty","shiftz"]] + shifts.loc[group["subcluster"]].values
+    return shifted_coordinates
 
 
 
@@ -150,21 +185,16 @@ def getClusterVolume(ID, group, eps, pps):
         # z,x,y = isclose.nonzero()
         # ax.scatter(x+,y,z, s=2)
 
+        
 
 
-def getOrder(ID, group, alg="dbscan"):
-    if ID == -1:
-        if alg == "dbscan":
-            return group["order"].values
-        elif alg == "hdbscan":
-            return group["h_order"].values
-    else:
-        if alg == "dbscan":
-            shifted_coms = pd.concat([group['shiftx'], group['shifty'], group['shiftz']], axis=1)
-        elif alg == "hdbscan":
-            shifted_coms = group.filter(['h_shiftx','h_shifty','h_shiftz'])
-        normalized_orientations = pd.concat([group['ux'], group['uy'], group['uz']], axis=1)
-        return (normalized_orientations.values*normalize(shifted_coms.sub(shifted_coms.mean().values))).sum(axis=1)
+# def getOrder(ID, group):
+    # if ID == -1:
+    #     return group["order"].values
+    # else:
+    #     shifted_coms = group.filter(['shiftx','shifty','shiftz'])
+    #     normalized_orientations = group.filter(['ux','uy','uz'])
+    #     return (normalized_orientations.values*normalize(shifted_coms.sub(shifted_coms.mean().values))).sum(axis=1)
 
 
 
@@ -301,7 +331,7 @@ def getCurvature(particledata, dimensions, cutoff=13):
     nums = np.count_nonzero(projections_array, axis=1)
     averages = np.zeros_like(sums)
     averages[np.where(nums>0)] = sums[np.where(nums>0)]/nums[np.where(nums>0)]
-
+    
     coms = particledata.filter(['x','y','z'])
     distances_array = distance_array(coms.values, coms.values, box=None)
     pairs = getPairs(distances_array, cutoff)
@@ -318,10 +348,193 @@ def getCurvature(particledata, dimensions, cutoff=13):
     _averages = np.zeros_like(_sums)
     _averages[np.where(_nums>0)] = _sums[np.where(_nums>0)]/nums[np.where(_nums>0)]
 
+    # nonan = np.where(~np.isnan(averages))
+    # condition = np.where(np.logical_or(averages[nonan]<-1, averages[nonan]>1))
     condition = np.where(np.logical_or(averages<-1, averages>1))
-    # df = pd.DataFrame({"old":averages[condition]})
+    
     averages[condition] = _averages[condition]
-    # df["new"] = averages[condition]
-    # print(df)
-
     return np.nan_to_num(averages)
+
+
+
+def planeFit(points):
+    """
+    p, n = planeFit(points)
+
+    Given an array, points, of shape (d,...)
+    representing points in d-dimensional space,
+    fit an d-dimensional plane to the points.
+    Return a point, p, on the plane (the point-cloud centroid),
+    and the normal, n.
+    """
+    import numpy as np
+    from numpy.linalg import svd
+    points = np.reshape(points, (np.shape(points)[0], -1)) # Collapse trialing dimensions
+    assert points.shape[0] <= points.shape[1], "There are only {} points in {} dimensions.".format(points.shape[1], points.shape[0])
+    ctr = points.mean(axis=1)
+    x = points - ctr[:,np.newaxis]
+    M = np.dot(x, x.T) # Could also use np.cov(x) here.
+    return ctr, svd(M)[0][:,-1]
+
+
+
+def normalVector(points):
+    """
+    p, n = planeFit(points)
+
+    Given an array, points, of shape (d,...)
+    representing points in d-dimensional space,
+    fit an d-dimensional plane to the points.
+    Return a point, p, on the plane (the point-cloud centroid),
+    and the normal, n.
+    """
+    import numpy as np
+    from numpy.linalg import svd
+    points = np.reshape(points, (np.shape(points)[0], -1)) # Collapse trialing dimensions
+    assert points.shape[0] <= points.shape[1], "There are only {} points in {} dimensions.".format(points.shape[1], points.shape[0])
+    ctr = points.mean(axis=1)
+    x = points - ctr[:,np.newaxis]
+    M = np.dot(x, x.T) # Could also use np.cov(x) here.
+    return svd(M)[0][:,-1]
+
+
+
+def getOrder(group, attributes):
+    group["order"] = np.nan
+    if group["cluster"].unique() == -1:
+        return group
+    else:
+        if attributes.get("system.gamma") < 1e-3:
+            if len(group.index) <= 3:
+                return group
+            shifted_coms = group.filter(['shiftx','shifty','shiftz'])
+            normalized_orientations = group.filter(['ux','uy','uz'])
+            center, normal = planeFit(shifted_coms.values.T)
+            data = np.sum(normalized_orientations.values*normal, axis=1)
+            if data.mean() < 0:
+                data_compare = data * (-1)
+                group["order"] = [data, data_compare][np.argmax([data.mean(), data_compare.mean()])]
+            else:
+                group["order"] = data
+            return group
+        else :
+            shifted_coms = group.filter(['shiftx','shifty','shiftz'])
+            normalized_orientations = group.filter(['ux','uy','uz'])
+            data = np.sum(normalized_orientations.values*normalize(shifted_coms.sub(shifted_coms.mean()).values, copy=False), axis=1)
+            group["order"] = data
+            return group
+
+
+
+def getSurfaceTension(particledata, dimensions, epot_calc, cutoff=3.0, dr=0.1):
+    """
+    find closest neighbours closer 3 sigma
+    calculate energy of particle
+    set particle away from local plane in upwards direction
+    calculate energy of particle
+    calculate energy difference
+    """
+    from pprint import pprint
+
+    # cluster_centers = particledata.groupby("cluster")[['shiftx','shifty','shiftz']].mean()
+    # # print(cluster_centers)
+    # particledata["cluster_x"] = particledata.cluster.apply(lambda x: cluster_centers.loc[x][0])
+    # particledata["cluster_y"] = particledata.cluster.apply(lambda x: cluster_centers.loc[x][1])
+    # particledata["cluster_z"] = particledata.cluster.apply(lambda x: cluster_centers.loc[x][2])
+    # # print(cluster_centers.loc[-1])
+    # # particledata.loc[cluster_centers.index, "cluster_x"] = cluster_centers.loc[cluster_centers.index, "shiftx"]
+
+    # coms = particledata.filter(['shiftx','shifty','shiftz'])
+    # orientations = particledata.filter(['ux','uy','uz'])
+
+    # distances_array = distance_array(coms.values, coms.values, box=dimensions)
+    # pairs = getPairs(distances_array, cutoff)
+    
+    coms = particledata.filter(['shiftx','shifty','shiftz'])
+    orientations = particledata.filter(['ux','uy','uz'])
+    distances_array = distance_array(coms.values, coms.values, box=dimensions)
+    pairs = getPairs(distances_array, cutoff)
+
+    for origin_id in np.unique(pairs.T[0]):
+        # get all neighbour ids
+        origin_neighbours = pairs.T[1][np.where(pairs.T[0] == origin_id)]
+        # if origin_neighbours.size < 10: continue
+        # all ids of plane 
+        all_ids = np.append(origin_neighbours, origin_id)
+        print(all_ids)
+        point_cloud = coms.loc[all_ids].values.T
+        #if more dimenstions than points
+        if point_cloud.shape[0] >= point_cloud.shape[1]: continue
+        
+        normal = normalVector(point_cloud)
+        print(normal)
+        orthogonal = np.random.rand(3)
+        orthogonal /= np.linalg.norm(orthogonal)
+        orthogonal_xx = np.cross(normal, orthogonal)
+        orthogonal_yy = np.cross(normal, orthogonal_xx)
+        print(orthogonal_xx)
+        print(orthogonal_yy)
+        
+        # initial
+        epot_coms = coms.loc[all_ids].reset_index(drop=True)
+        epot_orientations = orientations.loc[all_ids].reset_index(drop=True)
+        epot_before = epot_calc.get(epot_coms, epot_orientations, dimensions, cutoff=cutoff*10, ret="epot")[-1]
+        print(particledata.loc[origin_id]["epot"], epot_before)
+        assert np.abs(particledata.loc[origin_id]["epot"] - epot_before) < 5e-1
+        # print(epot_before)
+
+        # pxx
+        epot_coms.iloc[-1] += orthogonal_xx*dr
+        d_epot_xx = epot_calc.get(epot_coms, epot_orientations, dimensions, cutoff=cutoff*10, ret="epot")[-1] - epot_before
+        epot_coms.iloc[-1] -= orthogonal_xx*dr
+
+        # pyy
+        epot_coms.iloc[-1] += orthogonal_yy*dr
+        d_epot_yy = epot_calc.get(epot_coms, epot_orientations, dimensions, cutoff=cutoff*10, ret="epot")[-1] - epot_before
+        epot_coms.iloc[-1] -= orthogonal_yy*dr
+
+        # pzz
+        epot_coms.iloc[-1] += normal*dr
+        d_epot_zz = epot_calc.get(epot_coms, epot_orientations, dimensions, cutoff=cutoff*10, ret="epot")[-1] - epot_before
+        epot_coms.iloc[-1] -= normal*dr
+
+        epot_coms.index = all_ids
+
+        tensor = np.zeros((3,3))
+        tensor[0,0], tensor[1,1], tensor[2,2] = d_epot_xx, d_epot_yy, d_epot_zz
+        print(tensor)
+        print()
+
+    sys.exit()
+    
+
+    return np.nan_to_num(np.zeros_like(particledata.index))
+
+
+
+# plane : [[-x,-y,-z],[+x,+y,+z]]
+def isParticleInStructure(df, attributes, dimensions, fga_mode):
+    xyz = np.array(dimensions[:3])
+    if fga_mode == "plane":
+        plane = np.array([xyz/2 - attributes["system.plane_edge"]/2, xyz/2 + attributes["system.plane_edge"]/2])
+        plane[0,2] = xyz[2]/2 - attributes["system.ljsigma"]
+        plane[1,2] = xyz[2]/2 + attributes["system.ljsigma"]
+        xcond = np.logical_and(df["x"] >= plane[0,0], df["x"] <= plane[1,0])
+        ycond = np.logical_and(df["y"] >= plane[0,1], df["y"] <= plane[1,1])
+        zcond = np.logical_and(df["z"] >= plane[0,2], df["z"] <= plane[1,2])
+        return np.logical_and.reduce((xcond,ycond,zcond))
+    elif fga_mode == "sphere":
+        center = np.array([xyz/2])
+        radius = float(attributes["system.ljsigma"])**(1.0/6) / (2.0*np.sin(attributes["system.gamma"])) + attributes["system.ljsigma"]
+        return (distance_array(center, df.filter(["x","y","z"]).values, box=dimensions) <= radius).ravel()
+
+
+
+def isParticleInStructureCluster(df, fga_mode):
+    in_structure = df[df["in_structure"]]
+    uniques, counts = np.unique(in_structure[in_structure["cluster"] != -1]["cluster"], return_counts=True)
+    # largest_cluster_size = in_structure[in_structure["cluster"] != -1].groupby(["cluster"])["cluster"].count().max()
+    if len(counts) == 0 or max(counts) < 2:
+        return False
+    largest_cluster_ID = uniques[np.argmax(counts)]
+    return np.logical_and(df["cluster"] == largest_cluster_ID, df["in_structure"])
