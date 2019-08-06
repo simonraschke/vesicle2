@@ -208,7 +208,7 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     neigbours_chi = epot_calc.get(relevant_positions, relevant_orientations, dimensions, ret="chi", cutoff=attributes.get("system.ljsigma")*1.5, distances_array=distances_array)
     particledata.loc[relevant_cond.index, "epot"] = epot
     particledata.loc[relevant_cond.index, "chi"] = chi
-    particledata.loc[relevant_cond.index, "neigbours_chi"] = neigbours_chi
+    particledata.loc[relevant_cond.index, "neighbours_chi"] = neigbours_chi
 
     if args.timestats: print(f"epot and chi took     {time.perf_counter()-t_epot:.4f} seconds")
 
