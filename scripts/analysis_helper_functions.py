@@ -81,10 +81,10 @@ def getAttributeDict(filename, dimensions):
         'osmotic_density_inside': fileValueFromKeyword(filename, 'osmotic_density_inside', '='),
         'sw_position_min': fileValueFromKeyword(filename, 'sw_position_min', '='),
         'sw_position_max': fileValueFromKeyword(filename, 'sw_position_max', '='),
-        'sw_position_target': fileValueFromKeyword(filename, 'sw_position_target', '='),
+        'acceptance_position_target': fileValueFromKeyword(filename, 'acceptance_position_target', '='),
         'sw_orientation_min': fileValueFromKeyword(filename, 'sw_orientation_min', '='),
         'sw_orientation_max': fileValueFromKeyword(filename, 'sw_orientation_max', '='),
-        'sw_orientation_target': fileValueFromKeyword(filename, 'sw_orientation_target', '='),
+        'acceptance_orientation_target': fileValueFromKeyword(filename, 'acceptance_orientation_target', '='),
         'cell_min_edge': fileValueFromKeyword(filename, 'cell_min_edge', '='),
         'max_cells_dim': fileValueFromKeyword(filename, 'max_cells_dim', '='),
         'skip': fileValueFromKeyword(filename, 'skip', '=')
@@ -127,32 +127,31 @@ def getSubclusterLabels(group, eps):
 
 
 
-def getShiftedCoordinates(group, eps, dimensions, alg="dbscan"):
+def getShiftedCoordinates(group, eps, dimensions):
+    group[["shiftx","shifty","shiftz"]] = group[["x","y","z"]] 
+    if group["cluster"].unique() == -1:
+        return group
+
     # get largest subcluster
-    if alg == "dbscan":
-        unique, counts = np.unique(group["subcluster"], return_counts=True)
-    elif alg == "hdbscan":
-        unique, counts = np.unique(group["h_subcluster"], return_counts=True)
+    unique, counts = np.unique(group["subcluster"], return_counts=True)
     if len(unique) == 1:
-        return group[["shiftx","shifty","shiftz"]]
+        return group
     max_subclusterID = unique[counts == np.max(counts)][0]
     # calculate shifts per subcluster
-    if alg == "dbscan":
-        centers = group.groupby("subcluster")['x','y','z'].mean()
-    elif alg == "hdbscan":
-        centers = group.groupby("h_subcluster")['x','y','z'].mean()
+    centers = group.groupby("subcluster")['x','y','z'].mean()
     shifts = np.round(( -centers + centers.loc[max_subclusterID] )/dimensions[:3]).astype(int)
     shifts *= dimensions[:3]
-    shifted_coordinates = group[["shiftx","shifty","shiftz"]] + shifts.loc[group["subcluster"]].values
-    return shifted_coordinates
+    group[["shiftx","shifty","shiftz"]] += shifts.loc[group["subcluster"]].values
+    # print(group)
+    return group
 
 
 
-def getClusterVolume(ID, group, eps, pps):
+def getClusterVolume(group, eps, pps):
     # volume = 0
-    if ID == -1:
-        # single particles as spheres
-        return np.pi * (eps**3) * 4/3
+    group["volume"] = np.pi * (eps**3) * 4/3
+    if group["cluster"].unique() == -1:
+        return group
     else:
         # generate meshgrid around cluster particles plus threshold
         x_vector = np.arange(np.min(group["shiftx"])-eps, np.max(group["shiftx"])+eps+1.0/pps, 1.0/pps, dtype=np.float16)
@@ -163,15 +162,15 @@ def getClusterVolume(ID, group, eps, pps):
         NNN = 80
         if len(x_vector) > NNN or len(y_vector) > NNN or len(z_vector) > NNN:
             if pps-1 < 1:
-                return getClusterVolume(ID, group, eps, pps/2)
+                return getClusterVolume(group, eps, pps/2)
             else:
-                return getClusterVolume(ID, group, eps, pps-1)
+                return getClusterVolume(group, eps, pps-1)
 
         xx, yy, zz = np.meshgrid(x_vector, y_vector, z_vector)
         # stack them together as array of 3D points
         meshgrid = np.stack((xx.ravel(), yy.ravel(), zz.ravel()), axis=1)
         #calculate the distance array with centres of masses of particles
-        coms_cluster = pd.concat([group['shiftx'], group['shifty'], group['shiftz']], axis=1)
+        coms_cluster = group.filter(['shiftx','shifty','shiftz'])
         getClusterVolume.distances_array_volume = distance_array(meshgrid, coms_cluster.values, box=None).astype(np.float32)
         # check if any point in distance array row is close enough, then reshape to meshgrid
         # result is a binary meshgrid with 1 for the cluster shell region
@@ -179,7 +178,42 @@ def getClusterVolume(ID, group, eps, pps):
         # fill hole inside the shell region
         isclose = ndimage.morphology.binary_fill_holes(isclose).astype(bool)
         # calc volum from all points inside cluster
-        return ((1.0/pps)**3)*np.count_nonzero(isclose)
+        group["volume"] = ((1.0/pps)**3)*np.count_nonzero(isclose)
+        return group
+
+
+# def getClusterVolume(ID, group, eps, pps):
+#     # volume = 0
+#     if ID == -1:
+#         # single particles as spheres
+#         return np.pi * (eps**3) * 4/3
+#     else:
+#         # generate meshgrid around cluster particles plus threshold
+#         x_vector = np.arange(np.min(group["shiftx"])-eps, np.max(group["shiftx"])+eps+1.0/pps, 1.0/pps, dtype=np.float16)
+#         y_vector = np.arange(np.min(group["shifty"])-eps, np.max(group["shifty"])+eps+1.0/pps, 1.0/pps, dtype=np.float16)
+#         z_vector = np.arange(np.min(group["shiftz"])-eps, np.max(group["shiftz"])+eps+1.0/pps, 1.0/pps, dtype=np.float16)
+
+#         # make it recursive if meshgrid becomes too large
+#         NNN = 80
+#         if len(x_vector) > NNN or len(y_vector) > NNN or len(z_vector) > NNN:
+#             if pps-1 < 1:
+#                 return getClusterVolume(ID, group, eps, pps/2)
+#             else:
+#                 return getClusterVolume(ID, group, eps, pps-1)
+
+#         xx, yy, zz = np.meshgrid(x_vector, y_vector, z_vector)
+#         # stack them together as array of 3D points
+#         meshgrid = np.stack((xx.ravel(), yy.ravel(), zz.ravel()), axis=1)
+#         #calculate the distance array with centres of masses of particles
+#         coms_cluster = pd.concat([group['shiftx'], group['shifty'], group['shiftz']], axis=1)
+#         getClusterVolume.distances_array_volume = distance_array(meshgrid, coms_cluster.values, box=None).astype(np.float32)
+#         # check if any point in distance array row is close enough, then reshape to meshgrid
+#         # result is a binary meshgrid with 1 for the cluster shell region
+#         isclose = np.where(getClusterVolume.distances_array_volume <= eps, True, False).any(axis=1).reshape(xx.shape[0], yy.shape[1], zz.shape[2])
+#         # fill hole inside the shell region
+#         isclose = ndimage.morphology.binary_fill_holes(isclose).astype(bool)
+#         # calc volum from all points inside cluster
+#         return ((1.0/pps)**3)*np.count_nonzero(isclose)
 
 
         # z,x,y = isclose.nonzero()
@@ -212,100 +246,6 @@ def getNormedPairDistanceVectors(coms, pairs, dimensions):
     dist_vecs = np.subtract(coms.loc[pairs[:,1]].values, coms.loc[pairs[:,0]].values)
     dist_vecs = np.subtract(dist_vecs, np.multiply(dimensions[:3], np.round(dist_vecs/dimensions[:3])))
     return pd.DataFrame((dist_vecs.T / np.linalg.norm(dist_vecs, axis=1)).T, columns=["x","y","z"]), np.linalg.norm(dist_vecs, axis=1)
-
-
-
-class EpotCalculator(object):
-    def __init__(self, attributes):
-        self.sigma = attributes["system.ljsigma"]
-        self.epsilon = attributes["system.ljepsilon"]
-        self.kappa = attributes["system.kappa"]
-        self.gamma = attributes["system.gamma"]
-        self.a = 1.0 + self.kappa*np.sin(self.gamma*np.pi/180)
-        self.b = 1.0 - self.kappa*np.sin(self.gamma*np.pi/180)
-        self.c = np.linalg.norm(np.array([self.a,0,0]) + np.array([self.a-1.0, self.kappa*np.cos(self.gamma*np.pi/180),0]))
-
-
-
-    def getChi(self, coms, orientations, dimensions, cutoff=3):
-        try:
-            assert(len(coms) == len(orientations))
-            assert(len(dimensions) == 6)
-            assert(len(coms) == len(df))
-        except:
-            print(f"{len(coms)} coms")
-            print(f"{len(orientations)} orientations")
-            print(f"{len(dimensions)} dimensions")
-            return
-
-        distances_array = distance_array(coms.values, coms.values, box=dimensions)
-        pairs = getPairs(distances_array, 3)
-        normed_dist_vecs, dist_norms = getNormedPairDistanceVectors(coms, pairs, dimensions)
-        res1_u = np.multiply(np.take(orientations.values, pairs[:,0], axis=0), self.kappa/2)
-        res2_u = np.multiply(np.take(orientations.values, pairs[:,1], axis=0), self.kappa/2)
-        chi =  np.power((np.linalg.norm(-res1_u + normed_dist_vecs + res2_u, axis=1) - self.a), 2)
-        chi += np.power((np.linalg.norm( res1_u + normed_dist_vecs - res2_u, axis=1) - self.b), 2)
-        chi += np.power((np.linalg.norm(-res1_u + normed_dist_vecs - res2_u, axis=1) - self.c), 2)
-        chi += np.power((np.linalg.norm( res1_u + normed_dist_vecs + res2_u, axis=1) - self.c), 2)
-        epot = 4.0 * self.epsilon * ( np.power(self.sigma/dist_norms, 12) - (1.0 - chi)*np.power(self.sigma/dist_norms, 6) )
-        epot_array = np.zeros_like(distances_array)
-        pairs_t = pairs.T
-        epot_array[tuple(pairs_t)] = epot
-        epot_array[tuple([pairs_t[1], pairs_t[0]])] = epot
-        return np.sum(epot_array, axis=1)
-
-
-    
-    def get(self, coms, orientations, dimensions, cutoff=3, ret="epot", distances_array=None):
-        try:
-            assert(len(coms) == len(orientations))
-            assert(len(dimensions) == 6)
-        except:
-            print(f"{len(coms)} coms")
-            print(f"{len(orientations)} orientations")
-            print(f"{len(dimensions)} dimensions")
-            return
-
-        if isinstance(distances_array, type(None)):
-            distances_array = distance_array(coms.values, coms.values, box=dimensions)
-
-        if ret == "chi":
-            pairs = getPairs(distances_array, 1.3*self.sigma)
-            normed_dist_vecs, dist_norms = getNormedPairDistanceVectors(coms, pairs, dimensions)
-            res1_u = np.multiply(np.take(orientations.values, pairs[:,0], axis=0), self.kappa/2)
-            res2_u = np.multiply(np.take(orientations.values, pairs[:,1], axis=0), self.kappa/2)
-            chi =  np.power((np.linalg.norm(-res1_u + normed_dist_vecs + res2_u, axis=1) - self.a), 2)
-            chi += np.power((np.linalg.norm( res1_u + normed_dist_vecs - res2_u, axis=1) - self.b), 2)
-            chi += np.power((np.linalg.norm(-res1_u + normed_dist_vecs - res2_u, axis=1) - self.c), 2)
-            chi += np.power((np.linalg.norm( res1_u + normed_dist_vecs + res2_u, axis=1) - self.c), 2)
-            chi_array = np.zeros_like(distances_array)
-            pairs_t = pairs.T
-            chi_array[tuple(pairs_t)] = chi
-            chi_array[tuple([pairs_t[1], pairs_t[0]])] = chi
-            return np.sum(chi_array, axis=1)
-        elif ret == "epot":
-            pairs = getPairs(distances_array, cutoff)
-            normed_dist_vecs, dist_norms = getNormedPairDistanceVectors(coms, pairs, dimensions)
-            res1_u = np.multiply(np.take(orientations.values, pairs[:,0], axis=0), self.kappa/2)
-            res2_u = np.multiply(np.take(orientations.values, pairs[:,1], axis=0), self.kappa/2)
-            chi =  np.power((np.linalg.norm(-res1_u + normed_dist_vecs + res2_u, axis=1) - self.a), 2)
-            chi += np.power((np.linalg.norm( res1_u + normed_dist_vecs - res2_u, axis=1) - self.b), 2)
-            chi += np.power((np.linalg.norm(-res1_u + normed_dist_vecs - res2_u, axis=1) - self.c), 2)
-            chi += np.power((np.linalg.norm( res1_u + normed_dist_vecs + res2_u, axis=1) - self.c), 2)
-            epot = 4.0 * self.epsilon * ( np.power(self.sigma/dist_norms, 12) - (1.0 - chi)*np.power(self.sigma/dist_norms, 6) )
-            epot_array = np.zeros_like(distances_array)
-            pairs_t = pairs.T
-            epot_array[tuple(pairs_t)] = epot
-            epot_array[tuple([pairs_t[1], pairs_t[0]])] = epot
-            return np.sum(epot_array, axis=1)
-
-        elif ret == "epot+chi":
-            return self.get(coms, orientations, dimensions, cutoff=3, ret="epot", distances_array=distances_array), \
-                   self.get(coms, orientations, dimensions, ret="chi",  distances_array=distances_array)
-
-        elif ret == "chi+epot":
-            return self.get(coms, orientations, dimensions, ret="chi",  distances_array=distances_array), \
-                   self.get(coms, orientations, dimensions, cutoff=3, ret="epot", distances_array=distances_array)
 
 
 
@@ -522,19 +462,137 @@ def isParticleInStructure(df, attributes, dimensions, fga_mode):
         xcond = np.logical_and(df["x"] >= plane[0,0], df["x"] <= plane[1,0])
         ycond = np.logical_and(df["y"] >= plane[0,1], df["y"] <= plane[1,1])
         zcond = np.logical_and(df["z"] >= plane[0,2], df["z"] <= plane[1,2])
-        return np.logical_and.reduce((xcond,ycond,zcond))
+        return np.logical_and.reduce((xcond,ycond,zcond)), np.abs(np.cumprod(np.subtract(plane[1], plane[0])))[-1]
     elif fga_mode == "sphere":
         center = np.array([xyz/2])
         radius = float(attributes["system.ljsigma"])**(1.0/6) / (2.0*np.sin(attributes["system.gamma"])) + attributes["system.ljsigma"]
+        return (distance_array(center, df.filter(["x","y","z"]).values, box=dimensions) <= radius).ravel(), np.pi*4/3*radius**3*attributes["system.frame_guides_grid_edge"]**3
+
+
+def isParticleInStructureEnvironment(df, attributes, dimensions, fga_mode):
+    xyz = np.array(dimensions[:3])
+    if fga_mode == "plane":
+        plane = np.array([xyz/2 - attributes["system.plane_edge"]/2, xyz/2 + attributes["system.plane_edge"]/2])
+        plane[0,2] = xyz[2]/2 - attributes["system.ljsigma"]*3
+        plane[1,2] = xyz[2]/2 + attributes["system.ljsigma"]*3
+        xcond = np.logical_and(df["x"] >= plane[0,0], df["x"] <= plane[1,0])
+        ycond = np.logical_and(df["y"] >= plane[0,1], df["y"] <= plane[1,1])
+        zcond = np.logical_and(df["z"] >= plane[0,2], df["z"] <= plane[1,2])
+        return np.logical_and.reduce((xcond,ycond,zcond))
+    elif fga_mode == "sphere":
+        center = np.array([xyz/2])
+        radius = float(attributes["system.ljsigma"])**(1.0/6) / (2.0*np.sin(attributes["system.gamma"])) + attributes["system.ljsigma"]*3
         return (distance_array(center, df.filter(["x","y","z"]).values, box=dimensions) <= radius).ravel()
 
 
 
 def isParticleInStructureCluster(df, fga_mode):
+
     in_structure = df[df["in_structure"]]
+    # print(in_structure)
     uniques, counts = np.unique(in_structure[in_structure["cluster"] != -1]["cluster"], return_counts=True)
+    # print(uniques, counts)
     # largest_cluster_size = in_structure[in_structure["cluster"] != -1].groupby(["cluster"])["cluster"].count().max()
     if len(counts) == 0 or max(counts) < 2:
         return False
     largest_cluster_ID = uniques[np.argmax(counts)]
-    return np.logical_and(df["cluster"] == largest_cluster_ID, df["in_structure"])
+    # print(largest_cluster_ID)
+    # sys.exit()
+    return df["cluster"] == largest_cluster_ID
+
+
+
+
+class EpotCalculator(object):
+    def __init__(self, attributes):
+        self.sigma = attributes["system.ljsigma"]
+        self.epsilon = attributes["system.ljepsilon"]
+        self.kappa = attributes["system.kappa"]
+        self.gamma = attributes["system.gamma"]
+        self.a = 1.0 + self.kappa*np.sin(self.gamma*np.pi/180)
+        self.b = 1.0 - self.kappa*np.sin(self.gamma*np.pi/180)
+        self.c = np.linalg.norm(np.array([self.a,0,0]) + np.array([self.a-1.0, self.kappa*np.cos(self.gamma*np.pi/180),0]))
+
+
+
+    # def getChi(self, coms, orientations, dimensions, cutoff=3):
+    #     try:
+    #         assert(len(coms) == len(orientations))
+    #         assert(len(dimensions) == 6)
+    #         assert(len(coms) == len(df))
+    #     except:
+    #         print(f"{len(coms)} coms")
+    #         print(f"{len(orientations)} orientations")
+    #         print(f"{len(dimensions)} dimensions")
+    #         return
+
+    #     distances_array = distance_array(coms.values, coms.values, box=dimensions)
+    #     pairs = getPairs(distances_array, 3)
+    #     normed_dist_vecs, dist_norms = getNormedPairDistanceVectors(coms, pairs, dimensions)
+    #     res1_u = np.multiply(np.take(orientations.values, pairs[:,0], axis=0), self.kappa/2)
+    #     res2_u = np.multiply(np.take(orientations.values, pairs[:,1], axis=0), self.kappa/2)
+    #     chi =  np.power((np.linalg.norm(-res1_u + normed_dist_vecs + res2_u, axis=1) - self.a), 2)
+    #     chi += np.power((np.linalg.norm( res1_u + normed_dist_vecs - res2_u, axis=1) - self.b), 2)
+    #     chi += np.power((np.linalg.norm(-res1_u + normed_dist_vecs - res2_u, axis=1) - self.c), 2)
+    #     chi += np.power((np.linalg.norm( res1_u + normed_dist_vecs + res2_u, axis=1) - self.c), 2)
+    #     epot = 4.0 * self.epsilon * ( np.power(self.sigma/dist_norms, 12) - (1.0 - chi)*np.power(self.sigma/dist_norms, 6) )
+    #     epot_array = np.zeros_like(distances_array)
+    #     pairs_t = pairs.T
+    #     epot_array[tuple(pairs_t)] = epot
+    #     epot_array[tuple([pairs_t[1], pairs_t[0]])] = epot
+    #     return np.sum(epot_array, axis=1)
+
+
+    
+    def get(self, coms, orientations, dimensions, cutoff=3, ret="epot", distances_array=None):
+        try:
+            assert(len(coms) == len(orientations))
+            assert(len(dimensions) == 6)
+        except:
+            print(f"{len(coms)} coms")
+            print(f"{len(orientations)} orientations")
+            print(f"{len(dimensions)} dimensions")
+            return
+
+        if isinstance(distances_array, type(None)):
+            distances_array = distance_array(coms.values, coms.values, box=dimensions)
+
+        if ret == "chi":
+            pairs = getPairs(distances_array, cutoff)
+            normed_dist_vecs, dist_norms = getNormedPairDistanceVectors(coms, pairs, dimensions)
+            res1_u = np.multiply(np.take(orientations.values, pairs[:,0], axis=0), self.kappa/2)
+            res2_u = np.multiply(np.take(orientations.values, pairs[:,1], axis=0), self.kappa/2)
+            chi =  np.power((np.linalg.norm(-res1_u + normed_dist_vecs + res2_u, axis=1) - self.a), 2)
+            chi += np.power((np.linalg.norm( res1_u + normed_dist_vecs - res2_u, axis=1) - self.b), 2)
+            chi += np.power((np.linalg.norm(-res1_u + normed_dist_vecs - res2_u, axis=1) - self.c), 2)
+            chi += np.power((np.linalg.norm( res1_u + normed_dist_vecs + res2_u, axis=1) - self.c), 2)
+            chi = chi * np.power(self.sigma/dist_norms, 6)
+            chi_array = np.zeros_like(distances_array)
+            pairs_t = pairs.T
+            chi_array[tuple(pairs_t)] = chi
+            chi_array[tuple([pairs_t[1], pairs_t[0]])] = chi
+            # chi_array = np.where(chi_array > 1e-5, chi_array * np.power(self.sigma/distances_array, 6), 0)
+            return np.sum(chi_array, axis=1)
+        elif ret == "epot":
+            pairs = getPairs(distances_array, cutoff)
+            normed_dist_vecs, dist_norms = getNormedPairDistanceVectors(coms, pairs, dimensions)
+            res1_u = np.multiply(np.take(orientations.values, pairs[:,0], axis=0), self.kappa/2)
+            res2_u = np.multiply(np.take(orientations.values, pairs[:,1], axis=0), self.kappa/2)
+            chi =  np.power((np.linalg.norm(-res1_u + normed_dist_vecs + res2_u, axis=1) - self.a), 2)
+            chi += np.power((np.linalg.norm( res1_u + normed_dist_vecs - res2_u, axis=1) - self.b), 2)
+            chi += np.power((np.linalg.norm(-res1_u + normed_dist_vecs - res2_u, axis=1) - self.c), 2)
+            chi += np.power((np.linalg.norm( res1_u + normed_dist_vecs + res2_u, axis=1) - self.c), 2)
+            epot = 4.0 * self.epsilon * ( np.power(self.sigma/dist_norms, 12) - (1.0 - chi)*np.power(self.sigma/dist_norms, 6) )
+            epot_array = np.zeros_like(distances_array)
+            pairs_t = pairs.T
+            epot_array[tuple(pairs_t)] = epot
+            epot_array[tuple([pairs_t[1], pairs_t[0]])] = epot
+            return np.sum(epot_array, axis=1)
+
+        elif ret == "epot+chi":
+            return self.get(coms, orientations, dimensions, cutoff=cutoff, ret="epot", distances_array=distances_array), \
+                   self.get(coms, orientations, dimensions, cutoff=cutoff, ret="chi",  distances_array=distances_array)
+
+        elif ret == "chi+epot":
+            return self.get(coms, orientations, dimensions, cutoff=cutoff, ret="chi",  distances_array=distances_array), \
+                   self.get(coms, orientations, dimensions, cutoff=cutoff, ret="epot", distances_array=distances_array)

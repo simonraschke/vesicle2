@@ -131,6 +131,7 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     distances_array = distance_array(relevant_positions.values, relevant_positions.values, box=dimensions)
     dbscan = DBSCAN(min_samples=2, eps=args.clstr_eps, metric="precomputed", n_jobs=-1).fit(distances_array)
     labels = pd.DataFrame(np.append(dbscan.labels_, np.full(np.count_nonzero(~relevant_cond), -2)), columns=['cluster'])
+    particledata["neighbours"] = np.count_nonzero(distances_array <= attributes["system.ljsigma"]*1.5, axis=1).astype(np.int16) - 1
     particledata["cluster"] = labels
 
     unique, counts = np.unique(labels, return_counts=True)
@@ -155,12 +156,9 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     shift subclusters towards largest subcluster
     """
     t_shift = time.perf_counter()
-    particledata["shiftx"] = np.where(relevant_cond, particledata["x"], np.nan)
-    particledata["shifty"] = np.where(relevant_cond, particledata["y"], np.nan)
-    particledata["shiftz"] = np.where(relevant_cond, particledata["z"], np.nan)
-    for ID, group in particledata[relevant_cond].groupby("cluster"):
-        shifted_coordinates = helper.getShiftedCoordinates(group, args.clstr_eps, dimensions[:3])
-        particledata.loc[shifted_coordinates.index, ["shiftx","shifty","shiftz"]] = shifted_coordinates
+    particledata = particledata.assign(shiftx=np.nan, shifty=np.nan, shiftz=np.nan)
+    particledata.loc[relevant_cond.index, ["shiftx","shifty","shiftz"]] = particledata[relevant_cond].groupby("cluster", group_keys=False).apply(lambda g: helper.getShiftedCoordinates(g, args.clstr_eps, dimensions[:3]))[["shiftx","shifty","shiftz"]]
+    
     if args.timestats: print(f"shift took            {time.perf_counter()-t_shift:.4f} seconds")
 
 
@@ -172,8 +170,11 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
         t_fga_plane = time.perf_counter()
         particledata["in_structure"] = False
         particledata["in_structure_cluster"] = False
-        particledata.loc[relevant_cond, "in_structure"] = helper.isParticleInStructure(particledata[relevant_cond], attributes, dimensions, fga_mode)
+        in_structure, structure_volume = helper.isParticleInStructure(particledata[relevant_cond], attributes, dimensions, fga_mode)
+        particledata.loc[relevant_cond, "in_structure"] = in_structure
+        particledata.loc[in_structure, "structure_volume"] = structure_volume
         particledata.loc[relevant_cond, "in_structure_cluster"] = helper.isParticleInStructureCluster(particledata[relevant_cond], attributes)
+        particledata.loc[relevant_cond, "in_structure_env"] = helper.isParticleInStructureEnvironment(particledata[relevant_cond], attributes, dimensions, fga_mode)
         
         if args.timestats: print(f"plane fga case took   {time.perf_counter()-t_fga_plane:.4f} seconds")
         # print(particledata)
@@ -193,12 +194,7 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     get the volume per cluster DBSCAN
     """
     t_volume = time.perf_counter()
-    particledata["volume"] = np.nan
-    for ID, group in particledata[relevant_cond].groupby(["cluster"]):
-        volume = helper.getClusterVolume(ID, group, args.clstr_eps, 5)
-        particledata.loc[group.index, "volume"] = volume
-        if volume / np.cumprod(dimensions[:3])[-1] > 0.9:
-            raise Exception(f"volume of cluster {ID} is {volume / np.cumprod(dimensions[:3])[-1]} of box volume")
+    particledata.loc[relevant_cond.index, "volume"] = particledata[relevant_cond].groupby("cluster", group_keys=False).apply(lambda g: helper.getClusterVolume(g, args.clstr_eps, 5))["volume"]
     
     if args.timestats: print(f"volume took           {time.perf_counter()-t_volume:.4f} seconds")
 
@@ -208,9 +204,12 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     calculate the potential energy per particle
     """
     t_epot = time.perf_counter()
-    epot, chi = epot_calc.get(relevant_positions, relevant_orientations, dimensions, ret="epot+chi")
-    particledata["epot"] = np.append(epot, np.full(np.count_nonzero(~relevant_cond), np.nan))
-    particledata["chi"] = np.append(chi, np.full(np.count_nonzero(~relevant_cond), np.nan))
+    epot, chi = epot_calc.get(relevant_positions, relevant_orientations, dimensions, ret="epot+chi", cutoff=attributes.get("system.ljsigma")*3, distances_array=distances_array)
+    neigbours_chi = epot_calc.get(relevant_positions, relevant_orientations, dimensions, ret="chi", cutoff=attributes.get("system.ljsigma")*1.5, distances_array=distances_array)
+    particledata.loc[relevant_cond.index, "epot"] = epot
+    particledata.loc[relevant_cond.index, "chi"] = chi
+    particledata.loc[relevant_cond.index, "neigbours_chi"] = neigbours_chi
+
     if args.timestats: print(f"epot and chi took     {time.perf_counter()-t_epot:.4f} seconds")
 
 
@@ -219,8 +218,9 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     calculate the curvature of the structure for every particle
     """
     t_curvature = time.perf_counter()
-    particledata["curvature"] = np.append(helper.getCurvature(particledata[relevant_cond], dimensions, cutoff=1.3), np.full(np.count_nonzero(~relevant_cond), np.nan))
+    particledata["curvature"] = np.append(helper.getCurvature(particledata[relevant_cond], dimensions, cutoff=attributes.get("system.ljsigma")*1.5), np.full(np.count_nonzero(~relevant_cond), np.nan))
     particledata.loc[particledata["order"].isna(), "curvature"] = np.nan
+
     if args.timestats: print(f"curvature took        {time.perf_counter()-t_curvature:.4f} seconds")
 
 
@@ -245,7 +245,9 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     print(f"time {actual_time} took {t_end-t_start:.4f} seconds")
     t_start = time.perf_counter()
 
-    print(particledata.head(40))
+    # with pd.option_context('display.max_rows', None):  # more options can be specified also
+    #     print(particledata)
+    # print(particledata.head(40))
     # sys.exit()
 
     # print(datafile[f"time{actual_time}"])
