@@ -45,6 +45,6 @@ public:
     enum class SIMULATIONMODE { SA, FGA, OSMOTIC };
     std::atomic<SIMULATIONMODE> simulationmode {SIMULATIONMODE::SA};
 
-    enum class FGAMODE { SPHERE, PLANE, TUBE };
+    enum class FGAMODE { SPHERE, PLANE, TUBE, PAIR };
     std::atomic<FGAMODE> fgamode {FGAMODE::PLANE};
 };

@@ -172,7 +172,7 @@ REAL Box<P>::getLengthX() const
 template<PERIODIC P>
 REAL Box<P>::getLengthY() const
 {
-    return x;
+    return y;
 }
 
 

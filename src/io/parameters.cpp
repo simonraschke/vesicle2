@@ -37,7 +37,7 @@ void ves::Parameters::read(int argc, const char* argv[])
         ("general.acceptance", po::value<std::string>()->default_value("metropolis"), "[metropolis]")
         ("general.ensemble", po::value<std::string>()->default_value("NVT"), "[NVT, uVT]")
         ("general.simulation_mode", po::value<std::string>()->default_value("SA"), "[SA,FGA,OSMOTIC]")
-        ("general.fga_mode", po::value<std::string>()->default_value("plane"), "[sphere,plane, tube]")
+        ("general.fga_mode", po::value<std::string>()->default_value("plane"), "[sphere,plane,tube,pair]")
     ;
     
     po::options_description systemOptions("System Options");
@@ -48,7 +48,7 @@ void ves::Parameters::read(int argc, const char* argv[])
         ("system.guiding_elements_restriction", po::value<std::string>()->default_value("inplace"), "restriction of guiding elemets [inplace,structure]")
         // ("system.guiding_elements_distance", po::value<REAL>(), "preferred distance of guiding elements")
         ("system.frame_guides_grid_edge", po::value<std::size_t>(), "number of frame guides per dimension")
-        ("system.plane_edge", po::value<REAL>(), "number of guiding elements in plane")
+        ("system.plane_edge", po::value<REAL>(), "edge length of planar frame-guide or distance of pair")
         
         ("system.osmotic_density_inside", po::value<REAL>(), "density of osmotic particles inside GUV")
         ("system.osmotic_density_outside", po::value<REAL>(), "density of osmotic particles in bulk")
@@ -119,7 +119,7 @@ void ves::Parameters::read(int argc, const char* argv[])
     }
 
     std::map<std::string, po::variable_value>& m = optionsMap;
-    m["system.gamma"] = po::variable_value(enhance::deg_to_rad(optionsMap["system.gamma"].as<REAL>()), false);    
+    m["system.gamma"] = po::variable_value(enhance::deg_to_rad(optionsMap["system.gamma"].as<REAL>()), false);
 
     ves::GLOBAL::getInstance().simulationstatus = ves::GLOBAL::SIMULATIONSTATUS::PREPARATION;
     ves::GLOBAL::getInstance().acceptance = ves::GLOBAL::ACCEPTANCE::METROPOLIS;
@@ -144,6 +144,14 @@ void ves::Parameters::read(int argc, const char* argv[])
         ves::GLOBAL::getInstance().fgamode = ves::GLOBAL::FGAMODE::PLANE;
     else if(getOption("general.fga_mode").as<std::string>() == "tube")
         ves::GLOBAL::getInstance().fgamode = ves::GLOBAL::FGAMODE::TUBE;
+    else if(getOption("general.fga_mode").as<std::string>() == "pair")
+    {
+        ves::GLOBAL::getInstance().fgamode = ves::GLOBAL::FGAMODE::PAIR;
+        m["system.gamma"] = po::variable_value(REAL(0.0), false);
+        m["system.guiding_elements_each"] = po::variable_value(std::size_t(2), false);
+        m["system.guiding_elements_restriction"] = po::variable_value(std::string("inplace"), false);
+        m["system.frame_guides_grid_edge"] = po::variable_value(std::size_t(1), false);
+    }
     else
         vesWARNING("unable to get general.fga_mode, setting to plane");
 

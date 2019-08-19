@@ -455,7 +455,7 @@ def getSurfaceTension(particledata, dimensions, epot_calc, cutoff=3.0, dr=0.1):
 # plane : [[-x,-y,-z],[+x,+y,+z]]
 def isParticleInStructure(df, attributes, dimensions, fga_mode):
     xyz = np.array(dimensions[:3])
-    if fga_mode == "plane":
+    if fga_mode == "plane" or fga_mode == "pair":
         plane = np.array([xyz/2 - attributes["system.plane_edge"]/2, xyz/2 + attributes["system.plane_edge"]/2])
         plane[0,2] = xyz[2]/2 - attributes["system.ljsigma"]
         plane[1,2] = xyz[2]/2 + attributes["system.ljsigma"]
@@ -467,6 +467,7 @@ def isParticleInStructure(df, attributes, dimensions, fga_mode):
         center = np.array([xyz/2])
         radius = float(attributes["system.ljsigma"])**(1.0/6) / (2.0*np.sin(attributes["system.gamma"])) + attributes["system.ljsigma"]
         return (distance_array(center, df.filter(["x","y","z"]).values, box=dimensions) <= radius).ravel(), np.pi*4/3*radius**3*attributes["system.frame_guides_grid_edge"]**3
+
 
 
 def isParticleInStructureEnvironment(df, attributes, dimensions, fga_mode):

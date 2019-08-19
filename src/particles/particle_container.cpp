@@ -232,6 +232,19 @@ void ves::ParticleContainer::setupFromNew()
                             box.setLengthZ(edge);
                             break;
                         }
+                        
+                        case GLOBAL::FGAMODE::PAIR:
+                        {
+                            vesLOG("GLOBAL::FGAMODE::PAIR");
+                            std::size_t particles_complete = mobile + guiding_elements_each;
+                            REAL volume = static_cast<REAL>(particles_complete)/density;
+                            REAL edge = std::cbrt(volume);
+                            box.setLengthX(edge);
+                            box.setLengthY(edge);
+                            box.setLengthZ(edge);
+                            break;
+                        }
+
                         default: 
                             vesCRITICAL("encountered invalde FGAMODE during box setup");
                             break;
@@ -424,7 +437,58 @@ void ves::ParticleContainer::setupFromNew()
                 default:
                     vesCRITICAL("encountered invalde FGAMODE during particle generation");
                     break;
+                case GLOBAL::FGAMODE::PAIR:
+                {
+                    vesLOG("GLOBAL::FGAMODE::TUBE");
 
+                    const auto plane_edge = Parameters::getInstance().getOption("system.plane_edge").as<REAL>();
+                    const auto center = box.getCenter();
+                    const auto orientation_bound = PI_4/2;
+
+                    {
+                        const auto left = cartesian(center(0)-plane_edge/2, center(1), center(2));
+                        auto particle_it = addParticle<Particle::TYPE::FRAME>();
+                        particle_it->get()->coordinates_bounding.origin = std::make_unique<cartesian>(left);
+                        particle_it->get()->coordinates_bounding.setBoundingSphere(0, 0);
+                        bool worked = particle_it->get()->try_setCoordinates(left);
+                        if(!worked)
+                            vesCRITICAL("setting Particle::Frame coordinates to point did not work");
+
+                        worked = particle_it->get()->try_setOrientation(cartesian(0,0,1));
+                        particle_it->get()->orientation_bounding.value = orientation_bound;
+                        if(!worked)
+                            vesCRITICAL("setting Particle::Frame orientation to point did not work");
+                    }
+
+                    {
+                        const auto right = cartesian(center(0)+plane_edge/2, center(1), center(2));
+                        auto particle_it = addParticle<Particle::TYPE::FRAME>();
+                        particle_it->get()->coordinates_bounding.origin = std::make_unique<cartesian>(right);
+                        particle_it->get()->coordinates_bounding.setBoundingSphere(0, 0);
+                        bool worked = particle_it->get()->try_setCoordinates(right);
+                        if(!worked)
+                            vesCRITICAL("setting Particle::Frame coordinates to point did not work");
+
+                        worked = particle_it->get()->try_setOrientation(cartesian(0,0,1));
+                        particle_it->get()->orientation_bounding.value = orientation_bound;
+                        if(!worked)
+                            vesCRITICAL("setting Particle::Frame orientation to point did not work");
+                    }
+
+                    for(std::size_t i = 0; i < mobile; ++i)
+                    {
+                        const auto minimum_offset = ljsigma;
+                        auto particle_it = addParticle<Particle::TYPE::MOBILE>();
+                        do
+                        {
+                            particle_it->get()->try_setCoordinates(box.randomPointInside());
+                        }
+                        while(placement_conflict(*(particle_it->get()), minimum_offset));
+                        while(!particle_it->get()->try_setOrientation(ves::Particle::Base::cartesian::Random().normalized())){;}
+                    }
+                    
+                    break;
+                }
             }
             break;
         }
