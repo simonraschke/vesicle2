@@ -455,7 +455,7 @@ def getSurfaceTension(particledata, dimensions, epot_calc, cutoff=3.0, dr=0.1):
 # plane : [[-x,-y,-z],[+x,+y,+z]]
 def isParticleInStructure(df, attributes, dimensions, fga_mode):
     xyz = np.array(dimensions[:3])
-    if fga_mode == "plane" or fga_mode == "pair":
+    if fga_mode == "plane":
         plane = np.array([xyz/2 - attributes["system.plane_edge"]/2, xyz/2 + attributes["system.plane_edge"]/2])
         plane[0,2] = xyz[2]/2 - attributes["system.ljsigma"]
         plane[1,2] = xyz[2]/2 + attributes["system.ljsigma"]
@@ -467,6 +467,16 @@ def isParticleInStructure(df, attributes, dimensions, fga_mode):
         center = np.array([xyz/2])
         radius = float(attributes["system.ljsigma"])**(1.0/6) / (2.0*np.sin(attributes["system.gamma"])) + attributes["system.ljsigma"]
         return (distance_array(center, df.filter(["x","y","z"]).values, box=dimensions) <= radius).ravel(), np.pi*4/3*radius**3*attributes["system.frame_guides_grid_edge"]**3
+    elif fga_mode == "pair":
+        plane = np.array([xyz/2 - attributes["system.plane_edge"]/2, xyz/2 + attributes["system.plane_edge"]/2])
+        plane[0,1] = xyz[1]/2 - attributes["system.ljsigma"]
+        plane[1,1] = xyz[1]/2 + attributes["system.ljsigma"]
+        plane[0,2] = xyz[2]/2 - attributes["system.ljsigma"]
+        plane[1,2] = xyz[2]/2 + attributes["system.ljsigma"]
+        xcond = np.logical_and(df["x"] >= plane[0,0], df["x"] <= plane[1,0])
+        ycond = np.logical_and(df["y"] >= plane[0,1], df["y"] <= plane[1,1])
+        zcond = np.logical_and(df["z"] >= plane[0,2], df["z"] <= plane[1,2])
+        return np.logical_and.reduce((xcond,ycond,zcond)), np.abs(np.cumprod(np.subtract(plane[1], plane[0])))[-1]
 
 
 
@@ -483,7 +493,18 @@ def isParticleInStructureEnvironment(df, attributes, dimensions, fga_mode):
     elif fga_mode == "sphere":
         center = np.array([xyz/2])
         radius = float(attributes["system.ljsigma"])**(1.0/6) / (2.0*np.sin(attributes["system.gamma"])) + attributes["system.ljsigma"]*3
-        return (distance_array(center, df.filter(["x","y","z"]).values, box=dimensions) <= radius).ravel()
+        return (distance_array(center, df.filter(["x","y","z"]).values, box=dimensions) <= radius).ravel(), np.pi*4/3*radius**3*attributes["system.frame_guides_grid_edge"]**3
+    elif fga_mode == "pair":
+        plane = np.array([xyz/2 - attributes["system.plane_edge"]/2, xyz/2 + attributes["system.plane_edge"]/2])
+        plane[0,1] = xyz[1]/2 - attributes["system.ljsigma"]*3
+        plane[1,1] = xyz[1]/2 + attributes["system.ljsigma"]*3
+        plane[0,2] = xyz[2]/2 - attributes["system.ljsigma"]*3
+        plane[1,2] = xyz[2]/2 + attributes["system.ljsigma"]*3
+        xcond = np.logical_and(df["x"] >= plane[0,0], df["x"] <= plane[1,0])
+        ycond = np.logical_and(df["y"] >= plane[0,1], df["y"] <= plane[1,1])
+        zcond = np.logical_and(df["z"] >= plane[0,2], df["z"] <= plane[1,2])
+        print(np.logical_and.reduce((xcond,ycond,zcond)))
+        return np.logical_and.reduce((xcond,ycond,zcond))
 
 
 
