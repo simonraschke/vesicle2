@@ -236,6 +236,8 @@ def getPairs(distances_array, max_cutoff, same=False):
     valid = distances_array < max_cutoff
     np.fill_diagonal(valid, same)
     pairs = np.column_stack(np.where(valid))
+    if len(pairs) == 0:
+        return []
     pairs = np.sort(pairs, axis=1)
     unique, index = np.unique(pairs, axis=0, return_index=True)
     return pairs[index]
@@ -275,6 +277,8 @@ def getCurvature(particledata, dimensions, cutoff=13):
     coms = particledata.filter(['x','y','z'])
     distances_array = distance_array(coms.values, coms.values, box=None)
     pairs = getPairs(distances_array, cutoff)
+    if len(pairs) == 0:
+        return np.full((len(particledata.index),1), np.nan, dtype=np.float32)
     origin_orientations = orientations.values[pairs[:,0]]
     origin_connections = np.subtract(coms.values[pairs[:,1]], coms.values[pairs[:,0]])
     # origin_connections = np.divide(origin_connections, 10)
@@ -503,7 +507,6 @@ def isParticleInStructureEnvironment(df, attributes, dimensions, fga_mode):
         xcond = np.logical_and(df["x"] >= plane[0,0], df["x"] <= plane[1,0])
         ycond = np.logical_and(df["y"] >= plane[0,1], df["y"] <= plane[1,1])
         zcond = np.logical_and(df["z"] >= plane[0,2], df["z"] <= plane[1,2])
-        print(np.logical_and.reduce((xcond,ycond,zcond)))
         return np.logical_and.reduce((xcond,ycond,zcond))
 
 
