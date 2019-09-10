@@ -497,7 +497,7 @@ def isParticleInStructureEnvironment(df, attributes, dimensions, fga_mode):
     elif fga_mode == "sphere":
         center = np.array([xyz/2])
         radius = float(attributes["system.ljsigma"])**(1.0/6) / (2.0*np.sin(attributes["system.gamma"])) + attributes["system.ljsigma"]*3
-        return (distance_array(center, df.filter(["x","y","z"]).values, box=dimensions) <= radius).ravel(), np.pi*4/3*radius**3*attributes["system.frame_guides_grid_edge"]**3
+        return (distance_array(center, df.filter(["x","y","z"]).values, box=dimensions) <= radius).ravel()
     elif fga_mode == "pair":
         plane = np.array([xyz/2 - attributes["system.plane_edge"]/2, xyz/2 + attributes["system.plane_edge"]/2])
         plane[0,1] = xyz[1]/2 - attributes["system.ljsigma"]*3
