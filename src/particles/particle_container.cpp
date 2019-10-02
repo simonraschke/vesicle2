@@ -570,17 +570,21 @@ void ves::ParticleContainer::setupFromNew()
             const std::size_t osmotic_inside = Parameters::getInstance().getOption("system.osmotic_density_inside").as<REAL>() * (enhance::sphere_volume(inner_radius));
             const std::size_t osmotic_outside = Parameters::getInstance().getOption("system.osmotic_density_outside").as<REAL>() * (box.getVolume() - enhance::sphere_volume(outer_radius));
             vesLOG("place osmotic_inside " << osmotic_inside << " and osmotic_outside " << osmotic_outside);
+            vesLOG("inner radius " << inner_radius);
+            vesLOG("outer radius " << outer_radius);
 
             for(std::size_t i = 0; i < osmotic_inside; ++i)
             {
                 auto particle_it = addParticle<Particle::TYPE::OSMOTIC>();
-                auto point = box.randomPointInside();
+                // auto point = box.randomPointInside();
+                auto point = cartesian(box.getCenter() + cartesian(enhance::random<REAL>()(-inner_radius, inner_radius), enhance::random<REAL>()(-inner_radius, inner_radius), enhance::random<REAL>()(-inner_radius, inner_radius)));
                 do
                 {
-                    point = box.randomPointInside();
-                    particle_it->get()->try_setCoordinates(box.randomPointInside());
+                    point = cartesian(box.getCenter() + cartesian(enhance::random<REAL>()(-inner_radius, inner_radius), enhance::random<REAL>()(-inner_radius, inner_radius), enhance::random<REAL>()(-inner_radius, inner_radius)));
+                    particle_it->get()->try_setCoordinates(point);
                 }
-                while((point-box.getCenter()).norm() < inner_radius && placement_conflict(*(particle_it->get()), ljsigma));
+                while((point-box.getCenter()).norm() > inner_radius || placement_conflict(*(particle_it->get()), ljsigma));
+                // vesLOG("placed particle inside" << particle_it->get()->getCoordinates().format(ROWFORMAT) << " with distance from center " << (point-box.getCenter()).norm());
             }
 
             for(std::size_t i = 0; i < osmotic_outside; ++i)
@@ -590,11 +594,11 @@ void ves::ParticleContainer::setupFromNew()
                 do
                 {
                     point = box.randomPointInside();
-                    particle_it->get()->try_setCoordinates(box.randomPointInside());
+                    particle_it->get()->try_setCoordinates(point);
                 }
-                while((point-box.getCenter()).norm() > outer_radius && placement_conflict(*(particle_it->get()), ljsigma));
+                while((point-box.getCenter()).norm() < outer_radius || placement_conflict(*(particle_it->get()), ljsigma));
+                // vesLOG("placed particle outside" << particle_it->get()->getCoordinates().format(ROWFORMAT) << " with distance from center " << (point-box.getCenter()).norm());
             }
-            
 
             Parameters::getInstance().mutableAccess().insert(std::make_pair("system.density", boost::program_options::variable_value(REAL(data.size())/box.getVolume(), false)));
             break;

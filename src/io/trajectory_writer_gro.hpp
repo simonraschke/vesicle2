@@ -335,7 +335,14 @@ void ves::TrajectoryWriterGro::makeStartFileVMD(const SYSTEM& sys, std::size_t r
     VMD << "  $sel delete" << '\n';
     // VMD << "  set mol [mol new atoms 1]" << '\n';
     // VMD << "  set sel [atomselect $mol all]" << '\n';
-    VMD << "  for {set x 0} {$x < " << reservoir <<"} {incr x} {" << '\n';
+    if(GLOBAL::getInstance().simulationmode == GLOBAL::SIMULATIONMODE::OSMOTIC)
+    {
+        VMD << "  for {set x 0} {$x < " << bonds <<"} {incr x} {" << '\n';
+    }
+    else
+    {
+        VMD << "  for {set x 0} {$x < " << reservoir <<"} {incr x} {" << '\n';
+    }
     VMD << "    set y [expr $x+1]" << '\n';
     VMD << "    set sel [atomselect top \"index $x $y\"]" << '\n';
     VMD << "    incr x 1" << '\n';
