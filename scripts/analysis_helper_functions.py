@@ -621,3 +621,160 @@ class EpotCalculator(object):
         elif ret == "chi+epot":
             return self.get(coms, orientations, dimensions, cutoff=cutoff, ret="chi",  distances_array=distances_array), \
                    self.get(coms, orientations, dimensions, cutoff=cutoff, ret="epot", distances_array=distances_array)
+
+
+
+# from dataclasses import dataclass
+
+class Plane:
+    ID: int
+    x: int
+    xmin: float
+    xmax: float
+    y: int
+    ymin: float
+    ymax: float
+        
+    def __init__(
+            self,
+            ID: int,
+            x: int,
+            xmin: float,
+            xmax: float,
+            y: int,
+            ymin: float,
+            ymax: float,
+        ) -> None:
+        self.ID = ID
+        self.x = x
+        self.xmin = xmin
+        self.xmax = xmax
+        self.y = y
+        self.ymin = ymin
+        self.ymax = ymax
+
+    def __repr__(self) -> str:
+        return f"Plane: ID{self.ID}, x{self.x}, xmin{self.xmin}, xmax{self.xmax}, y{self.y}, ymin{self.ymin}, ymax{self.ymax}"
+
+    def __hash__(self) -> int:
+        return hash((self.ID, self.x, self.xmin, self.xmax, self.y, self.ymin, self.ymax))
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Plane):
+            return NotImplemented
+        return (
+            (self.ID, self.x, self.xmin, self.xmax, self.y, self.ymin, self.ymax)== 
+            (other.ID, other.x, other.xmin, other.xmax, other.y, other.ymin, other.ymax))
+    
+    @property
+    def dx(self):
+        return self.xmax-self.xmin
+
+    @property
+    def dy(self):
+        return self.ymax-self.ymin
+
+    @property
+    def area(self):
+        return self.dx*self.dy
+    
+    def contains(self, point):
+        return self.xmin <= point[0] <= self.xmax and self.ymin <= point[1] <= self.ymax
+
+    def isNeighboursOf(self, other):
+        return abs(self.x - other.x) == 1 and abs(self.y - other.y) == 0 or abs(self.y - other.y) == 1 and abs(self.x - other.x) == 0
+
+
+
+class Cuboid(Plane):
+    z: int
+    zmin: float
+    zmax: float
+    
+    def __init__(
+        self,
+        ID: int,
+        x: int,
+        xmin: float,
+        xmax: float,
+        y: int,
+        ymin: float,
+        ymax: float,
+        z: int,
+        zmin: float,
+        zmax: float
+        ) -> None:
+        self.z = z
+        self.zmin = zmin
+        self.zmax = zmax
+        super(Cuboid, self).__init__(ID, x, xmin, xmax, y, ymin, ymax)
+
+    def __repr__(self) -> str:
+        return f"Coboid: {super(Cuboid, self).__repr__()}, z{self.z}, zmin{self.zmin}, xzmax{self.zmax}"
+
+    def __hash__(self) -> int:
+        return hash((super(Cuboid, self), self.z, self.zmin, self.zmax))
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Cuboid):
+            return NotImplemented
+        return (
+            (super(Cuboid, self), self.z, self.zmin, self.zmax) == 
+            (super(Cuboid, self), other.z, other.zmin, other.zmax))
+    
+    
+    @property
+    def dz(self):
+        return self.zmax-self.zmin
+
+    @property
+    def volume(self):
+        return self.dx*self.dy*self.dz
+
+    @property
+    def center(self):
+        return [
+            self.xmin + self.dx/2,
+            self.ymin + self.dy/2,
+            self.zmin + self.dz/2
+        ]
+    
+    def contains(self, point):
+        return self.xmin <= point[0] <= self.xmax and self.ymin <= point[1] <= self.ymax and self.zmin <= point[2] <= self.zmax
+    
+    
+def generateDomains(plane_edge, num_dim, center, ):
+    domains = []
+    domain_edge = plane_edge/num_dim
+    for x in range(num_dim):
+        for y in range(num_dim):
+            domains.append(
+                Cuboid(
+                    # (num_dim*num_dim+1) - (x*num_dim+y+1),
+                    (num_dim*num_dim-1) - (x*num_dim+y),
+                    x, 
+                    center[0] - plane_edge/2 + domain_edge*x,
+                    center[0] - plane_edge/2 + domain_edge*(x+1),
+                    y, 
+                    center[1] - plane_edge/2 + domain_edge*y,
+                    center[1] - plane_edge/2 + domain_edge*(y+1),
+                    0, 
+                    # FIXME: hardocded == BAD
+                    center[2] - 1.5,
+                    center[2] + 1.5
+                )
+            )
+    return domains
+
+
+
+def getDomainIDofPoint(point, domains):
+    for d in domains:
+        if d.contains(point.values):
+            return d.ID
+    return -1
+
+
+
+def getStructureDomainID(particledata, domains):
+    return particledata.filter(["shiftx","shifty","shiftz"]).apply(axis=1, func=lambda point: getDomainIDofPoint(point, domains)).astype(np.int8)

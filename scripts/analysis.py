@@ -81,23 +81,29 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     attributes = hdfgroup.attrs
     actual_time = int(re.findall('\d+', key )[0])
     
-    if actual_time < args.start:
+    if actual_time <= args.start:
         continue
-    elif actual_time > args.stop:
+    elif actual_time >= args.stop:
         continue
     # print("time ", actual_time)
 
-    dimensions = [
+    dimensions = np.array([
         attributes.get("system.box.x"),
         attributes.get("system.box.y"),
         attributes.get("system.box.z"),
         90,90,90
-    ]
+    ])
 
     if not attributes_setup_done:
         _attributes = pd.DataFrame(helper.getAttributeDict(args.config, dimensions[:3]))
         fga_mode = _attributes['fga_mode'].values[0]
         simulation_mode = _attributes['simulation_mode'].values[0]
+        if fga_mode == "plane":
+            plane_edge = _attributes['plane_edge'].values[0]
+            guiding_elements_per_dim = int(np.sqrt(_attributes['guiding_elements_each'].values[0]))
+            print(plane_edge, guiding_elements_per_dim, dimensions[:3]/2)
+            domains = helper.generateDomains(plane_edge, guiding_elements_per_dim, dimensions[:3]/2)
+            _attributes["domain_volume"] = domains[0].volume
         datafile["attributes"] = _attributes
         attributes_setup_done = True
 
@@ -164,7 +170,7 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
 
 
     """
-    special analysis of plane in case of planar fga
+    special analysis of fga structure
     """
     if simulation_mode == "FGA":
         t_fga_plane = time.perf_counter()
@@ -226,6 +232,19 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
 
 
     """
+    calculate particle structure domain and the domain volume
+    """
+    if fga_mode == "plane":
+        t_population = time.perf_counter()
+        particledata["structure_domain"] = np.int8(-1)
+        # particledata.loc["structure_domain"] = helper.getStructureDomainID(particledata, domains)
+        particledata.loc[particledata["in_structure_env"], "structure_domain"] = helper.getStructureDomainID(particledata[particledata["in_structure_env"]], domains)
+
+        if args.timestats: print(f"structure domain took {time.perf_counter()-t_population:.4f} seconds")
+
+
+
+    """
     calculate the surface tension for every particle
     """
     # t_tension = time.perf_counter()
@@ -247,7 +266,9 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
 
     # with pd.option_context('display.max_rows', None):  # more options can be specified also
     #     print(particledata)
-    # print(particledata.head(40))
+    # print(particledata.head(30))
+    # print(particledata.tail(30))
+    # print(particledata.info())
     # sys.exit()
 
     # print(datafile[f"time{actual_time}"])
