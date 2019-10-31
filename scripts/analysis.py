@@ -81,9 +81,9 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     attributes = hdfgroup.attrs
     actual_time = int(re.findall('\d+', key )[0])
     
-    if actual_time <= args.start:
+    if actual_time < args.start:
         continue
-    elif actual_time >= args.stop:
+    elif actual_time > args.stop:
         continue
     # print("time ", actual_time)
 
@@ -100,10 +100,11 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
         simulation_mode = _attributes['simulation_mode'].values[0]
         if fga_mode == "plane":
             plane_edge = _attributes['plane_edge'].values[0]
-            guiding_elements_per_dim = int(np.sqrt(_attributes['guiding_elements_each'].values[0]))
+            guiding_elements = _attributes['guiding_elements_each'].values[0]
+            guiding_elements_per_dim = int(np.sqrt(guiding_elements))
             print(plane_edge, guiding_elements_per_dim, dimensions[:3]/2)
             domains = helper.generateDomains(plane_edge, guiding_elements_per_dim, dimensions[:3]/2)
-            _attributes["domain_volume"] = domains[0].volume
+            _attributes["domain_volume"] = domains[0].volume if guiding_elements > 0 else 0.0
         datafile["attributes"] = _attributes
         attributes_setup_done = True
 
@@ -172,7 +173,7 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     """
     special analysis of fga structure
     """
-    if simulation_mode == "FGA":
+    if simulation_mode == "FGA" and guiding_elements > 0:
         t_fga_plane = time.perf_counter()
         particledata["in_structure"] = False
         particledata["in_structure_cluster"] = False
@@ -234,7 +235,7 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     """
     calculate particle structure domain and the domain volume
     """
-    if fga_mode == "plane":
+    if fga_mode == "plane" and guiding_elements > 0:
         t_population = time.perf_counter()
         particledata["structure_domain"] = np.int8(-1)
         # particledata.loc["structure_domain"] = helper.getStructureDomainID(particledata, domains)
