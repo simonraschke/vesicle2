@@ -21,6 +21,7 @@
 #include "particles/osmotic.hpp"
 #include "io/parameters.hpp"
 #include "control/controller.hpp"
+#include "enhance/output_utility.hpp"
 #include <tbb/task_scheduler_init.h>
 
 
@@ -50,7 +51,17 @@ auto main(int argc, const char *argv[]) -> int
     
     ves::Controller controller;
     controller.setup();
+
+    // run with wall and cpu time measurements
+    double wall0 = enhance::get_wall_time();
+    double cpu0  = enhance::get_cpu_time();
     controller.start();
+    double wall1 = enhance::get_wall_time();
+    double cpu1  = enhance::get_cpu_time();
+
+    vesLOG("WALLTIME         " << wall1 - wall0);
+    vesLOG("CPUTIME          " << cpu1 - cpu0);
+    vesLOG("CPUTIMEPERTHREAD " << (cpu1 - cpu0)/ves::Parameters::getInstance().getOption("general.cpu_threads").as<std::size_t>());
 
     if(ves::Controller::SIGNAL.load() != 0)
         return ves::Controller::SIGNAL.load();
