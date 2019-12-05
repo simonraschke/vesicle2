@@ -25,7 +25,7 @@ target_compile_options(vesicle2 PRIVATE
     -Wall 
     -Wextra 
     -Wpedantic 
-    -Weffc++
+    # -Weffc++
     -march=nocona
     -mtune=nocona
     -std=c++17

@@ -53,11 +53,11 @@ auto main(int argc, const char *argv[]) -> int
     controller.setup();
 
     // run with wall and cpu time measurements
-    double wall0 = enhance::get_wall_time();
-    double cpu0  = enhance::get_cpu_time();
+    const double wall0 = enhance::get_wall_time();
+    const double cpu0  = enhance::get_cpu_time();
     controller.start();
-    double wall1 = enhance::get_wall_time();
-    double cpu1  = enhance::get_cpu_time();
+    const double wall1 = enhance::get_wall_time();
+    const double cpu1  = enhance::get_cpu_time();
 
     vesLOG("WALLTIME         " << wall1 - wall0);
     vesLOG("CPUTIME          " << cpu1 - cpu0);
