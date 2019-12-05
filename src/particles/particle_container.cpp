@@ -184,7 +184,7 @@ void ves::ParticleContainer::setupFromNew()
             }
             catch(const std::exception& e)
             {
-                vesLOG(e.what());
+                vesCRITICAL(e.what());
             }
             
             const std::size_t frame_guides_grid_edge = Parameters::getInstance().getOption("system.frame_guides_grid_edge").as<std::size_t>();
@@ -224,9 +224,9 @@ void ves::ParticleContainer::setupFromNew()
                         case GLOBAL::FGAMODE::PLANE:
                         {
                             vesLOG("GLOBAL::FGAMODE::PLANE");
-                            std::size_t particles_complete = mobile + guiding_elements_each;
-                            REAL volume = static_cast<REAL>(particles_complete)/density;
-                            REAL edge = std::cbrt(volume);
+                            const std::size_t particles_complete = mobile + guiding_elements_each;
+                            const REAL volume = static_cast<REAL>(particles_complete)/density;
+                            const REAL edge = std::cbrt(volume);
                             box.setLengthX(edge);
                             box.setLengthY(edge);
                             box.setLengthZ(edge);
@@ -236,9 +236,9 @@ void ves::ParticleContainer::setupFromNew()
                         case GLOBAL::FGAMODE::PAIR:
                         {
                             vesLOG("GLOBAL::FGAMODE::PAIR");
-                            std::size_t particles_complete = mobile + guiding_elements_each;
-                            REAL volume = static_cast<REAL>(particles_complete)/density;
-                            REAL edge = std::cbrt(volume);
+                            const std::size_t particles_complete = mobile + guiding_elements_each;
+                            const REAL volume = static_cast<REAL>(particles_complete)/density;
+                            const REAL edge = std::cbrt(volume);
                             box.setLengthX(edge);
                             box.setLengthY(edge);
                             box.setLengthZ(edge);

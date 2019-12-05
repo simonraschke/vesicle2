@@ -105,6 +105,8 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
             print(plane_edge, guiding_elements_per_dim, dimensions[:3]/2)
             domains = helper.generateDomains(plane_edge, guiding_elements_per_dim, dimensions[:3]/2)
             _attributes["domain_volume"] = domains[0].volume if guiding_elements > 0 else 0.0
+        elif fga_mode == "sphere":
+            guiding_elements = _attributes['guiding_elements_each'].values[0]
         datafile["attributes"] = _attributes
         attributes_setup_done = True
 
