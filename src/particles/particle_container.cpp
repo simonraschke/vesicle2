@@ -184,7 +184,7 @@ void ves::ParticleContainer::setupFromNew()
             }
             catch(const std::exception& e)
             {
-                vesCRITICAL(e.what());
+                vesLOG(e.what());
             }
             
             const std::size_t frame_guides_grid_edge = Parameters::getInstance().getOption("system.frame_guides_grid_edge").as<std::size_t>();
