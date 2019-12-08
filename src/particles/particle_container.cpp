@@ -279,7 +279,9 @@ void ves::ParticleContainer::setupFromNew()
                 {
                     vesLOG("GLOBAL::FGAMODE::SPHERE");
 
-                    const REAL radius = std::pow(ljsigma,1.0/6.0)/(2.0*std::sin(gamma));
+                    // const REAL radius = std::pow(ljsigma,1.0/6.0)/(2.0*std::sin(gamma));
+                    const REAL radius = std::pow(2, 1.0/6.0)*ljsigma/(2.0*std::sin(gamma));
+                    // vesLOG("radius " << radius);
                     const REAL dist_x = box.getLengthX()/frame_guides_grid_edge;
                     const REAL dist_y = box.getLengthY()/frame_guides_grid_edge;
                     const REAL dist_z = box.getLengthZ()/frame_guides_grid_edge;
