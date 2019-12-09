@@ -72,6 +72,7 @@ ge_restriction_map = defaultdict(lambda : -1, {
 
 
 
+origin_positions = pd.DataFrame()
 attributes_setup_done = False
 
 t_start = time.perf_counter()
@@ -95,6 +96,7 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     ])
 
     if not attributes_setup_done:
+        origin_positions = pd.DataFrame(hdfgroup.get("position")[()], columns=['x','y','z'])
         _attributes = pd.DataFrame(helper.getAttributeDict(args.config, dimensions[:3]))
         fga_mode = _attributes['fga_mode'].values[0]
         simulation_mode = _attributes['simulation_mode'].values[0]
@@ -246,6 +248,12 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
         if args.timestats: print(f"structure domain took {time.perf_counter()-t_population:.4f} seconds")
 
 
+
+    """
+    Mean Square Displacement
+    """
+    particledata["MSD"] = helper.getMSD(origin_positions, positions, dimensions)
+    
 
     """
     calculate the surface tension for every particle

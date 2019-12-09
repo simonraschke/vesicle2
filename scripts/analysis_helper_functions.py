@@ -778,3 +778,14 @@ def getDomainIDofPoint(point, domains):
 
 def getStructureDomainID(particledata, domains):
     return particledata.filter(["shiftx","shifty","shiftz"]).apply(axis=1, func=lambda point: getDomainIDofPoint(point, domains)).astype(np.int8)
+
+
+
+def getMSD(origin, compare, dimensions):
+    def squared_distance(x0, x1, dims):
+        delta = np.abs(x0 - x1)
+        delta = np.where(delta > 0.5 * dims, delta - dims, delta)
+        # return np.linalg.norm(delta, axis=1)
+        return (delta ** 2).sum(axis=1)
+
+    return squared_distance(origin, compare, dimensions[:3])
