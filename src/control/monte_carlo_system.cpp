@@ -131,7 +131,7 @@ void ves::MonteCarloSystem::run()
 {
     GLOBAL::getInstance().simulationstatus.store(GLOBAL::SIMULATIONSTATUS::RUNNING);
 
-    for(; time < time_max; ++time)
+    for(; time <= time_max; ++time)
     {
         if(ves::Controller::SIGNAL.load() != 0)
         {

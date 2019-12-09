@@ -297,7 +297,7 @@ void ves::ParticleContainer::setupFromNew()
                         {
                             auto particle_it = addParticle<Particle::TYPE::FRAME>();
                             particle_it->get()->coordinates_bounding.origin = std::make_unique<cartesian>(cartesian(point));
-                            particle_it->get()->coordinates_bounding.setBoundingSphere(0, ljsigma);
+                            particle_it->get()->coordinates_bounding.setBoundingSphere(0, ljsigma/5);
                             bool worked = particle_it->get()->try_setCoordinates(point);
                             if(!worked)
                                 vesCRITICAL("setting Particle::Frame coordinates to point did not work");
