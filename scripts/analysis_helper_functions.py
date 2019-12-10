@@ -781,11 +781,27 @@ def getStructureDomainID(particledata, domains):
 
 
 
-def getMSD(origin, compare, dimensions):
-    def squared_distance(x0, x1, dims):
-        delta = np.abs(x0 - x1)
-        delta = np.where(delta > 0.5 * dims, delta - dims, delta)
-        # return np.linalg.norm(delta, axis=1)
-        return (delta ** 2).sum(axis=1)
+def _internal_squared_distance(x0, x1, dims):
+    delta = np.abs(x0 - x1)
+    delta = np.where(delta > 0.5 * dims, delta - dims, delta)
+    # return np.linalg.norm(delta, axis=1)
+    return (delta ** 2).sum(axis=1)
 
-    return squared_distance(origin, compare, dimensions[:3])
+
+
+def _internal_distance(squared_distances):
+    return np.linalg.norm(squared_distances, axis=1)
+
+
+
+def getMSD(origin, compare, dimensions):
+    return _internal_squared_distance(origin, compare, dimensions[:3])
+
+
+
+def correctForPBC(last, compare, dimensions):
+    delta = compare[["x","y","z"]] - last[["x","y","z"]]
+    shifts = np.round(delta/dimensions[:3]).astype(int)
+    corrected_delta = delta - shifts*dimensions[:3]
+    data = last[["xnopbc","ynopbc","znopbc"]] + corrected_delta.values
+    return pd.DataFrame.from_records(data)

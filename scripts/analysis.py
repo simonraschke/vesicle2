@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import gc
 import sys
 import os
 import argparse
@@ -71,7 +72,7 @@ ge_restriction_map = defaultdict(lambda : -1, {
 })
 
 
-
+LAST_DF = pd.DataFrame()
 origin_positions = pd.DataFrame()
 attributes_setup_done = False
 
@@ -95,8 +96,18 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
         90,90,90
     ])
 
+
+    t_prep = time.perf_counter()
+    
+    positions = pd.DataFrame(hdfgroup.get("position")[()], columns=['x','y','z'])
+    orientations = pd.DataFrame(hdfgroup.get("orientation")[()], columns=['ux','uy','uz'])
+    particledata = pd.concat([positions,orientations], axis=1).astype(np.float32) 
+
+
     if not attributes_setup_done:
         origin_positions = pd.DataFrame(hdfgroup.get("position")[()], columns=['x','y','z'])
+        LAST_DF = particledata
+        LAST_DF = LAST_DF.assign(xnopbc=LAST_DF["x"], ynopbc=LAST_DF["y"], znopbc=LAST_DF["z"])
         _attributes = pd.DataFrame(helper.getAttributeDict(args.config, dimensions[:3]))
         fga_mode = _attributes['fga_mode'].values[0]
         simulation_mode = _attributes['simulation_mode'].values[0]
@@ -113,13 +124,6 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
         attributes_setup_done = True
 
     epot_calc = helper.EpotCalculator(attributes)
-
-    t_prep = time.perf_counter()
-    
-    positions = pd.DataFrame(hdfgroup.get("position")[()], columns=['x','y','z'])
-    orientations = pd.DataFrame(hdfgroup.get("orientation")[()], columns=['ux','uy','uz'])
-    particledata = pd.concat([positions,orientations], axis=1).astype(np.float32) 
-
 
 
     """
@@ -252,7 +256,12 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     """
     Mean Square Displacement
     """
-    particledata["MSD"] = helper.getMSD(origin_positions, positions, dimensions)
+    t_msd = time.perf_counter()
+    particledata = particledata.assign(xnopbc=np.nan, ynopbc=np.nan, znopbc=np.nan)
+    particledata[["xnopbc","ynopbc","znopbc"]] = helper.correctForPBC(LAST_DF, particledata, dimensions)
+    particledata["MSD"] = helper.getMSD(origin_positions, particledata[["xnopbc","ynopbc","znopbc"]].values, dimensions)
+    if args.timestats: print(f"MSD took              {time.perf_counter()-t_msd:.4f} seconds")
+    
     
 
     """
@@ -275,14 +284,14 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     print(f"time {actual_time} took {t_end-t_start:.4f} seconds")
     t_start = time.perf_counter()
 
+    LAST_DF = particledata
     # with pd.option_context('display.max_rows', None):  # more options can be specified also
     #     print(particledata)
     # print(particledata.head(30))
-    # print(particledata.tail(30))
-    # print(particledata.info())
+    # np.set_printoptions(precision=2, linewidth=200, floatmode="fixed")
+    # vals.append(particledata["MSD"].mean())
     # sys.exit()
 
     # print(datafile[f"time{actual_time}"])
-
 trajfile.close()
 datafile.close()
