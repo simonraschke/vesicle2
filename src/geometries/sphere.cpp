@@ -54,7 +54,7 @@ void ves::SphereGeometry::generate()
     else if(size == 2)
     {
         points[0] = cartesian::UnitZ();
-        points[1] = cartesian::UnitZ();
+        points[1] = -cartesian::UnitZ();
     }
     else if(size == 3)
     {
@@ -80,45 +80,45 @@ void ves::SphereGeometry::generate()
         points[1] = rotation_down * points[0];
         points[2] = rotation_plane * points[1];
         points[3] = rotation_plane * points[2];
-        points[4] = rotation_down * points[3];
+        points[4] = -cartesian::UnitZ();
     }
     else if(size == 6)
     {
-        const Eigen::AngleAxisf rotation_down (M_PI_2 , cartesian::UnitY());
-        const Eigen::AngleAxisf rotation_plane (M_PI_2 , cartesian::UnitZ());
-        points[0] = cartesian::UnitZ();
-        points[1] = rotation_down * points[0];
-        points[2] = rotation_plane * points[1];
-        points[3] = rotation_plane * points[2];
-        points[4] = rotation_plane * points[3];
-        points[5] = rotation_down * points[4];
+        points[0] = cartesian::UnitX();
+        points[1] = -cartesian::UnitX();
+        points[2] = cartesian::UnitY();
+        points[3] = -cartesian::UnitY();
+        points[4] = cartesian::UnitZ();
+        points[5] = -cartesian::UnitZ();
     }
-    else if(size == 7)
-    {
-        const Eigen::AngleAxisf rotation_down (M_PI_2 , cartesian::UnitY());
-        const Eigen::AngleAxisf rotation_plane (M_PI * 2.f / 5.f , cartesian::UnitZ());
-        points[0] = cartesian::UnitZ();
-        points[1] = rotation_down * points[0];
-        points[2] = rotation_plane * points[1];
-        points[3] = rotation_plane * points[2];
-        points[4] = rotation_plane * points[3];
-        points[5] = rotation_plane * points[4];
-        points[6] = rotation_down * points[5];
-    }
-    else if(size == 8)
-    {
-        const Eigen::AngleAxisf rotation_down_initial (M_PI_2 , cartesian::UnitY());
-        const Eigen::AngleAxisf rotation_down (M_PI_2 , cartesian::UnitY());
-        const Eigen::AngleAxisf rotation_plane (M_PI_2 , cartesian::UnitZ());
-        points[0] = rotation_down_initial * (cartesian::UnitZ());
-        points[1] = rotation_plane * points[0];
-        points[2] = rotation_plane * points[1];
-        points[3] = rotation_plane * points[2];
-        points[4] = rotation_down * points[3];
-        points[5] = rotation_plane * points[4];
-        points[6] = rotation_plane * points[5];
-        points[7] = rotation_plane * points[6];
-    }
+    // else if(size == 7)
+    // {
+    //     const Eigen::AngleAxisf rotation_down (M_PI_2 , cartesian::UnitY());
+    //     const Eigen::AngleAxisf rotation_plane (M_PI * 2.f / 5.f , cartesian::UnitZ());
+    //     points[0] = cartesian::UnitZ();
+    //     points[1] = rotation_down * points[0];
+    //     points[2] = rotation_plane * points[1];
+    //     points[3] = rotation_plane * points[2];
+    //     points[4] = rotation_plane * points[3];
+    //     points[5] = rotation_plane * points[4];
+    //     points[6] = rotation_down * points[5];
+    // }
+    // else if(size == 8)
+    // {
+
+    //     const Eigen::AngleAxisf rotation_down_initial (M_PI_4 , cartesian::UnitY());
+    //     const Eigen::AngleAxisf rotation_downdown_initial (M_PI_2+M_PI_4 , cartesian::UnitY());
+    //     const Eigen::AngleAxisf rotation_plane_half (M_PI_4 , cartesian::UnitZ());
+    //     const Eigen::AngleAxisf rotation_plane (M_PI_2 , cartesian::UnitZ());
+    //     points[0] = rotation_down_initial * (cartesian::UnitZ());
+    //     points[1] = rotation_plane * points[0];
+    //     points[2] = rotation_plane * points[1];
+    //     points[3] = rotation_plane * points[2];
+    //     points[4] = rotation_plane_half * rotation_downdown_initial * (cartesian::UnitZ());
+    //     points[5] = rotation_plane * points[4];
+    //     points[6] = rotation_plane * points[5];
+    //     points[7] = rotation_plane * points[6];
+    // }
     else
     {
         float phi,phiold,theta;
