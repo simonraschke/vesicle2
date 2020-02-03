@@ -138,7 +138,7 @@ def getShiftedCoordinates(group, eps, dimensions):
         return group
     max_subclusterID = unique[counts == np.max(counts)][0]
     # calculate shifts per subcluster
-    centers = group.groupby("subcluster")['x','y','z'].mean()
+    centers = group.groupby("subcluster")[['x','y','z']].mean()
     shifts = np.round(( -centers + centers.loc[max_subclusterID] )/dimensions[:3]).astype(int)
     shifts *= dimensions[:3]
     group[["shiftx","shifty","shiftz"]] += shifts.loc[group["subcluster"]].values
@@ -654,7 +654,7 @@ class Plane:
         self.ymax = ymax
 
     def __repr__(self) -> str:
-        return f"Plane: ID{self.ID}, x{self.x}, xmin{self.xmin}, xmax{self.xmax}, y{self.y}, ymin{self.ymin}, ymax{self.ymax}"
+        return f"Plane: ID {self.ID},  x {self.x}, xmin {self.xmin},  xmax {self.xmax},  y {self.y},  ymin {self.ymin},  ymax {self.ymax}"
 
     def __hash__(self) -> int:
         return hash((self.ID, self.x, self.xmin, self.xmax, self.y, self.ymin, self.ymax))
@@ -740,7 +740,7 @@ class Cuboid(Plane):
         ]
     
     def contains(self, point):
-        return self.xmin <= point[0] <= self.xmax and self.ymin <= point[1] <= self.ymax and self.zmin <= point[2] <= self.zmax
+        return self.xmin < point[0] <= self.xmax and self.ymin < point[1] <= self.ymax and self.zmin < point[2] <= self.zmax
     
     
 def generateDomains(plane_edge, num_dim, center, ):
@@ -765,6 +765,33 @@ def generateDomains(plane_edge, num_dim, center, ):
                 )
             )
     return domains
+    
+    
+def generateDomainsInternal(plane_edge, num_dim, center, sigma):
+    domains = []
+    domain_edge = plane_edge/num_dim
+    count = (num_dim-1)**2-1
+    for x in range(num_dim-1):
+        for y in range(num_dim-1):
+            domains.append(
+                Cuboid(
+                    # (num_dim*num_dim+1) - (x*num_dim+y+1),
+                    count,
+                    x, 
+                    center[0] - (num_dim-1)*(domain_edge)/2 + domain_edge*x,
+                    center[0] - (num_dim-1)*(domain_edge)/2 + domain_edge*(x+1),
+                    y, 
+                    center[1] - (num_dim-1)*(domain_edge)/2 + domain_edge*y,
+                    center[1] - (num_dim-1)*(domain_edge)/2 + domain_edge*(y+1),
+                    0, 
+                    # FIXME: hardocded == BAD
+                    center[2] - 1.5,
+                    center[2] + 1.5
+                )
+            )
+            count -= 1
+    return domains
+
 
 
 
@@ -779,6 +806,8 @@ def getDomainIDofPoint(point, domains):
 def getStructureDomainID(particledata, domains):
     return particledata.filter(["shiftx","shifty","shiftz"]).apply(axis=1, func=lambda point: getDomainIDofPoint(point, domains)).astype(np.int8)
 
+def getStructureDomainIDInternal(particledata, domains):
+    return particledata.filter(["shiftx","shifty","shiftz"]).apply(axis=1, func=lambda point: getDomainIDofPoint(point, domains)).astype(np.int8)
 
 
 def _internal_squared_distance(x0, x1, dims):
