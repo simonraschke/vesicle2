@@ -777,7 +777,7 @@ def generateDomainsInternal(plane_edge, num_dim, center, sigma):
                 Cuboid(
                     # (num_dim*num_dim+1) - (x*num_dim+y+1),
                     count,
-                    x, 
+                    x,
                     center[0] - (num_dim-1)*(domain_edge)/2 + domain_edge*x,
                     center[0] - (num_dim-1)*(domain_edge)/2 + domain_edge*(x+1),
                     y, 

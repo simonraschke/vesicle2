@@ -118,6 +118,8 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
             print(plane_edge, guiding_elements_per_dim, dimensions[:3]/2)
             domains = helper.generateDomains(plane_edge, guiding_elements_per_dim, dimensions[:3]/2)
             domains_internal = helper.generateDomainsInternal(plane_edge, guiding_elements_per_dim, dimensions[:3]/2, attributes.get('system.ljsigma') )
+            for d in domains_internal:
+                print(d)
             _attributes["domain_volume"] = domains[0].volume if guiding_elements > 0 else 0.0
         elif fga_mode == "sphere":
             guiding_elements = _attributes['guiding_elements_each'].values[0]
@@ -249,7 +251,7 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
         particledata["structure_domain"] = np.int8(-1)
         particledata.loc[particledata["in_structure_env"], "structure_domain"] = helper.getStructureDomainID(particledata[particledata["in_structure_env"]], domains)
         particledata["structure_domain_internal"] = np.int8(-1)
-        particledata.loc[relevant_cond, "structure_domain_internal"] = helper.getStructureDomainIDInternal(particledata[relevant_cond], domains_internal)
+        particledata.loc[particledata["in_structure_env"], "structure_domain_internal"] = helper.getStructureDomainIDInternal(particledata["in_structure_env"], domains_internal)
 
         if args.timestats: print(f"structure domain took {time.perf_counter()-t_population:.4f} seconds")
 
@@ -289,7 +291,7 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     LAST_DF = particledata
     # with pd.option_context('display.max_rows', None):  # more options can be specified also
     #     print(particledata)
-    # print(particledata.head(30))
+    print(particledata.head(30))
     # np.set_printoptions(precision=2, linewidth=200, floatmode="fixed")
     # vals.append(particledata["MSD"].mean())
     # sys.exit()

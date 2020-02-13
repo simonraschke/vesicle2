@@ -48,10 +48,10 @@ ves::AngularLennardJonesInteraction::AngularLennardJonesInteraction()
 
 REAL ves::AngularLennardJonesInteraction::calculate(const particle_t& p1, const particle_t& p2) const
 {
-    if(p1.getType() == ves::Particle::TYPE::FRAME and p2.getType() == ves::Particle::TYPE::FRAME)
-    {
-        return 0;
-    }
+    // if(p1.getType() == ves::Particle::TYPE::FRAME and p2.getType() == ves::Particle::TYPE::FRAME && ves::GLOBAL::getInstance().fgamode == ves::GLOBAL::FGAMODE::SPHERE)
+    // {
+    //     return 0;
+    // }
 
     cartesian distance_vec = box.distanceVector(p1, p2);
 
