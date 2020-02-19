@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import gc
 import sys
 import os
 import argparse
@@ -8,17 +7,10 @@ import re
 import numpy as np
 import pandas as pd
 import h5py
-import pprint
-import shutil
-import subprocess
-import sklearn
 import time
 import analysis_helper_functions as helper
 
 from sklearn.cluster import DBSCAN
-from sklearn.manifold import TSNE
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import normalize
 from MDAnalysis.lib.distances import distance_array
 from collections import defaultdict
 
@@ -37,7 +29,6 @@ parser.add_argument("--timestats", action='store_true', help="show timer statist
 args = parser.parse_args()
 
 
-pp = pprint.PrettyPrinter(indent=4, compact=False)
 np.set_printoptions(suppress=True)
 
 try:
@@ -291,7 +282,7 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     LAST_DF = particledata
     # with pd.option_context('display.max_rows', None):  # more options can be specified also
     #     print(particledata)
-    print(particledata.head(30))
+    # print(particledata.head(30))
     # np.set_printoptions(precision=2, linewidth=200, floatmode="fixed")
     # vals.append(particledata["MSD"].mean())
     # sys.exit()
