@@ -536,37 +536,7 @@ class EpotCalculator(object):
         self.gamma = attributes["system.gamma"]
         self.a = 1.0 + self.kappa*np.sin(self.gamma*np.pi/180)
         self.b = 1.0 - self.kappa*np.sin(self.gamma*np.pi/180)
-        self.c = np.linalg.norm(np.array([self.a,0,0]) + np.array([self.a-1.0, self.kappa*np.cos(self.gamma*np.pi/180),0]))
-
-
-
-    # def getChi(self, coms, orientations, dimensions, cutoff=3):
-    #     try:
-    #         assert(len(coms) == len(orientations))
-    #         assert(len(dimensions) == 6)
-    #         assert(len(coms) == len(df))
-    #     except:
-    #         print(f"{len(coms)} coms")
-    #         print(f"{len(orientations)} orientations")
-    #         print(f"{len(dimensions)} dimensions")
-    #         return
-
-    #     distances_array = distance_array(coms.values, coms.values, box=dimensions)
-    #     pairs = getPairs(distances_array, 3)
-    #     normed_dist_vecs, dist_norms = getNormedPairDistanceVectors(coms, pairs, dimensions)
-    #     res1_u = np.multiply(np.take(orientations.values, pairs[:,0], axis=0), self.kappa/2)
-    #     res2_u = np.multiply(np.take(orientations.values, pairs[:,1], axis=0), self.kappa/2)
-    #     chi =  np.power((np.linalg.norm(-res1_u + normed_dist_vecs + res2_u, axis=1) - self.a), 2)
-    #     chi += np.power((np.linalg.norm( res1_u + normed_dist_vecs - res2_u, axis=1) - self.b), 2)
-    #     chi += np.power((np.linalg.norm(-res1_u + normed_dist_vecs - res2_u, axis=1) - self.c), 2)
-    #     chi += np.power((np.linalg.norm( res1_u + normed_dist_vecs + res2_u, axis=1) - self.c), 2)
-    #     epot = 4.0 * self.epsilon * ( np.power(self.sigma/dist_norms, 12) - (1.0 - chi)*np.power(self.sigma/dist_norms, 6) )
-    #     epot_array = np.zeros_like(distances_array)
-    #     pairs_t = pairs.T
-    #     epot_array[tuple(pairs_t)] = epot
-    #     epot_array[tuple([pairs_t[1], pairs_t[0]])] = epot
-    #     return np.sum(epot_array, axis=1)
-
+        self.c = np.sqrt(1+self.kappa**2*np.cos(self.gamma*np.pi/180))  
 
     
     def get(self, coms, orientations, dimensions, cutoff=3, ret="epot", distances_array=None):
