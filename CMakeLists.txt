@@ -34,6 +34,4 @@ target_compile_options(vesicle2 PRIVATE
 # Link
 target_link_libraries(vesicle2 vesicle_lib)
 
-if(NOT INDOCKERBUILD)
-    install( TARGETS vesicle2 RUNTIME DESTINATION bin )
-endif()
+install( TARGETS vesicle2 RUNTIME DESTINATION bin )
