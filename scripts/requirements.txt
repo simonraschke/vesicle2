@@ -4,4 +4,4 @@ scipy==1.4.1
 h5py==2.10.0
 MDAnalysis==0.20.1
 scikit_learn==0.22.2
-pytables==3.6.1
+tables==3.6.1
