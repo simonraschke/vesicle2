@@ -140,9 +140,11 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     distances_array = distance_array(relevant_positions.values, relevant_positions.values, box=dimensions)
     dbscan = DBSCAN(min_samples=2, eps=args.clstr_eps, metric="precomputed", n_jobs=-1).fit(distances_array)
     labels = pd.DataFrame(np.append(dbscan.labels_, np.full(np.count_nonzero(~relevant_cond), -2)), columns=['cluster'])
-    particledata["neighbours"] = np.count_nonzero(distances_array <= attributes["system.ljsigma"]*1.5, axis=1).astype(np.int16) - 1
+    
+    particledata["neighbours"] = np.uint8(0)
+    particledata.loc[relevant_cond, "neighbours"] = np.count_nonzero(distances_array <= attributes["system.ljsigma"]*1.5, axis=1).astype(np.int16) - 1
+    
     particledata["cluster"] = labels
-
     unique, counts = np.unique(labels, return_counts=True)
     particledata["clustersize"] = particledata["cluster"].apply( lambda x: counts[np.where(unique == x)][0] if x >= 0 else 1 )
     particledata.loc[particledata["cluster"] == -1, "clustersize"] = 1
@@ -155,7 +157,8 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     subcluster identification
     """
     t_sub = time.perf_counter()
-    particledata.loc[relevant_cond.index, "subcluster"] = particledata[relevant_cond].groupby("cluster", group_keys=False).apply(lambda g: helper.getSubclusterLabels(g, args.clstr_eps))["subcluster"]
+    particledata["sublcuster"] = np.uint8(0)
+    particledata.loc[relevant_cond, "subcluster"] = particledata[relevant_cond].groupby("cluster", group_keys=False).apply(lambda g: helper.getSubclusterLabels(g, args.clstr_eps))["subcluster"].astype(np.uint8)
 
     if args.timestats: print(f"subclstr took         {time.perf_counter()-t_sub:.4f} seconds")
 
@@ -166,7 +169,7 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     """
     t_shift = time.perf_counter()
     particledata = particledata.assign(shiftx=np.nan, shifty=np.nan, shiftz=np.nan)
-    particledata.loc[relevant_cond.index, ["shiftx","shifty","shiftz"]] = particledata[relevant_cond].groupby("cluster", group_keys=False).apply(lambda g: helper.getShiftedCoordinates(g, args.clstr_eps, dimensions[:3]))[["shiftx","shifty","shiftz"]]
+    particledata.loc[relevant_cond, ["shiftx","shifty","shiftz"]] = particledata[relevant_cond].groupby("cluster", group_keys=False).apply(lambda g: helper.getShiftedCoordinates(g, args.clstr_eps, dimensions[:3]))[["shiftx","shifty","shiftz"]]
     
     if args.timestats: print(f"shift took            {time.perf_counter()-t_shift:.4f} seconds")
 
@@ -193,7 +196,7 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     get the order of particle in cluster
     """
     t_order = time.perf_counter()
-    particledata.loc[relevant_cond.index, "order"] = particledata[relevant_cond].groupby("cluster", group_keys=False).apply(lambda g: helper.getOrder(g, attributes))["order"]
+    particledata.loc[relevant_cond, "order"] = particledata[relevant_cond].groupby("cluster", group_keys=False).apply(lambda g: helper.getOrder(g, attributes))["order"]
     
     if args.timestats: print(f"order took            {time.perf_counter()-t_order:.4f} seconds")
 
@@ -203,7 +206,7 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     get the volume per cluster DBSCAN
     """
     t_volume = time.perf_counter()
-    particledata.loc[relevant_cond.index, "volume"] = particledata[relevant_cond].groupby("cluster", group_keys=False).apply(lambda g: helper.getClusterVolume(g, args.clstr_eps, 5))["volume"]
+    particledata.loc[relevant_cond, "volume"] = particledata[relevant_cond].groupby("cluster", group_keys=False).apply(lambda g: helper.getClusterVolume(g, args.clstr_eps, 5))["volume"]
     
     if args.timestats: print(f"volume took           {time.perf_counter()-t_volume:.4f} seconds")
 
@@ -215,9 +218,9 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     t_epot = time.perf_counter()
     epot, chi = epot_calc.get(relevant_positions, relevant_orientations, dimensions, ret="epot+chi", cutoff=attributes.get("system.ljsigma")*3, distances_array=distances_array)
     neigbours_chi = epot_calc.get(relevant_positions, relevant_orientations, dimensions, ret="chi", cutoff=attributes.get("system.ljsigma")*1.5, distances_array=distances_array)
-    particledata.loc[relevant_cond.index, "epot"] = epot
-    particledata.loc[relevant_cond.index, "chi"] = chi
-    particledata.loc[relevant_cond.index, "neighbours_chi"] = neigbours_chi
+    particledata.loc[relevant_cond, "epot"] = epot
+    particledata.loc[relevant_cond, "chi"] = chi
+    particledata.loc[relevant_cond, "neighbours_chi"] = neigbours_chi
 
     if args.timestats: print(f"epot and chi took     {time.perf_counter()-t_epot:.4f} seconds")
 
@@ -283,6 +286,7 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     # with pd.option_context('display.max_rows', None):  # more options can be specified also
     #     print(particledata)\
     # print(particledata.head(30))
+    # print(particledata.tail(30))
     # np.set_printoptions(precision=2, linewidth=200, floatmode="fixed")
     # vals.append(particledata["MSD"].mean())
     # sys.exit()

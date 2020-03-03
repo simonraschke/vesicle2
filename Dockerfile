@@ -6,7 +6,7 @@ RUN zypper in -l -y gcc8 gcc8-c++ eigen3-devel tbb-devel libboost_program_option
 
 WORKDIR /usr/src
 
-RUN git clone --recurse-submodules -b factory https://github.com/simonraschke/vesicle2.git
+RUN git clone --recurse-submodules -b master https://github.com/simonraschke/vesicle2.git
 
 WORKDIR /usr/src/vesicle2
 
