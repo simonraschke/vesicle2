@@ -44,14 +44,14 @@ void ves::Parameters::read(int argc, const char* argv[])
     systemOptions.add_options()
         ("system.mobile", po::value<std::size_t>(), "number of mobile particles")
 
-        ("system.guiding_elements_each", po::value<std::size_t>(), "number of guiding elements per frame guide")
+        ("system.guiding_elements_each", po::value<std::size_t>()->default_value(0), "number of guiding elements per frame guide")
         ("system.guiding_elements_restriction", po::value<std::string>()->default_value("inplace"), "restriction of guiding elemets [inplace,structure]")
         // ("system.guiding_elements_distance", po::value<REAL>(), "preferred distance of guiding elements")
-        ("system.frame_guides_grid_edge", po::value<std::size_t>(), "number of frame guides per dimension")
-        ("system.plane_edge", po::value<REAL>(), "edge length of planar frame-guide or distance of pair")
+        ("system.frame_guides_grid_edge", po::value<std::size_t>()->default_value(1), "number of frame guides per dimension")
+        ("system.plane_edge", po::value<REAL>()->default_value(12), "edge length of planar frame-guide or distance of pair")
         
-        ("system.osmotic_density_inside", po::value<REAL>(), "density of osmotic particles inside GUV")
-        ("system.osmotic_density_outside", po::value<REAL>(), "density of osmotic particles in bulk")
+        ("system.osmotic_density_inside", po::value<REAL>()->default_value(0.01), "density of osmotic particles inside GUV")
+        ("system.osmotic_density_outside", po::value<REAL>()->default_value(0.01), "density of osmotic particles in bulk")
         
         ("system.density", po::value<REAL>(), "particle density")
         ("system.mu", po::value<REAL>()->default_value(0), "chemical potential")
@@ -73,7 +73,7 @@ void ves::Parameters::read(int argc, const char* argv[])
         ("system.sw_orientation_max", po::value<REAL>()->default_value(M_PI_4), "orientation stepwidth max")
         ("system.acceptance_orientation_target", po::value<REAL>()->default_value(0.3), "orientation acceptance percentage target")
 
-        ("system.cell_min_edge", po::value<REAL>(), "minimum edge length of cell")
+        ("system.cell_min_edge", po::value<REAL>()->default_value(3.0), "minimum edge length of cell")
         ("system.max_cells_dim", po::value<std::size_t>()->default_value(20), "maximum cells per dimension")
     ;
     

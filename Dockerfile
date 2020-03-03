@@ -16,9 +16,10 @@
 
 FROM alpine:3.11.3
 
-RUN apk add --no-cache build-base git cmake eigen-dev
+RUN apk add --no-cache build-base git cmake eigen-dev boost-dev
 
-RUN apk add --no-cache --allow-untrusted --repository http://dl-3.alpinelinux.org/alpine/edge/testing hdf5 hdf5-dev boost-dev boost-program_options boost-filesystem libtbb libtbb-dev
+RUN apk add --no-cache --allow-untrusted --repository http://dl-3.alpinelinux.org/alpine/edge/testing hdf5 hdf5-dev libtbb libtbb-dev
+
 WORKDIR /usr/src
 
 RUN git clone --recurse-submodules -b master https://github.com/simonraschke/vesicle2.git
@@ -26,5 +27,7 @@ RUN git clone --recurse-submodules -b master https://github.com/simonraschke/ves
 WORKDIR /usr/src/vesicle2
 
 RUN rm -rf build && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ .. && make -j
+
+RUN apk --no-cache del build-base git cmake 
 
 ENTRYPOINT ["/root/bin/vesicle2"]
