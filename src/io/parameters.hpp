@@ -21,7 +21,7 @@
 #include "common/definitions.hpp"
 #include "enhance/singleton.hpp"
 #include "enhance/math_utility.hpp"
-#include "enhance/stacktrace.cxx"
+// #include "enhance/stacktrace.cxx"
 #include "common/global.hpp"
 #include <fstream>
 #include <boost/filesystem.hpp>
@@ -48,7 +48,7 @@ struct ves::Parameters
             return optionsMap[s]; 
         else
         {
-            Backtrace();
+            // Backtrace();
             throw std::logic_error("optionsMap does not contain "+s);
         }
     }
