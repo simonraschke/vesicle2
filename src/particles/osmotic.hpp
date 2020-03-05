@@ -48,7 +48,7 @@ struct ves::Particle::Osmotic
     Osmotic() : Base()
     {
         setLJAttraction(0);
-        setLJRejection(2);
+        setLJRejection(1);
     }
 
     inline virtual auto getType() const -> TYPE override { return TYPE::OSMOTIC; }
