@@ -240,7 +240,7 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     """
     calculate particle structure domain and the domain volume
     """
-    if fga_mode == "plane" and guiding_elements > 0:
+    if fga_mode == "plane" and guiding_elements > 0 and simulation_mode == "FGA":
         t_population = time.perf_counter()
         particledata["structure_domain"] = np.int8(-1)
         particledata.loc[particledata["in_structure_env"], "structure_domain"] = helper.getStructureDomainID(particledata[particledata["in_structure_env"]], domains)
