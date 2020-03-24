@@ -197,20 +197,12 @@ void ves::MonteCarloSystem::cellStep(const ves::Cell& cell)
     Particle::Base::cartesian translation;
     Particle::Base::cartesian orientation_before;
 
-    // std::vector<std::uint32_t> iteration_IDs(cell.data.size());
-    // std::iota(std::begin(iteration_IDs), std::end(iteration_IDs), 0);
-    // std::shuffle(std::begin(iteration_IDs), std::end(iteration_IDs), pseudo_engine);
-
     std::vector<ves::Cell::container_t::const_iterator> iterators(cell.data.size());
     std::iota(std::begin(iterators), std::end(iterators), std::begin(cell));
     std::shuffle(std::begin(iterators), std::end(iterators), pseudo_engine);
 
-
-    // for(const auto num : iteration_IDs)
-    // for(const Cell::particle_ptr_t& particle : iterators)
     for(const auto& iterator : iterators)
     {
-        // const Cell::particle_ptr_t& particle = std::cref(cell.data[num]);
         const Cell::particle_ptr_t& particle = *iterator;
         
         // coordinates move
@@ -252,11 +244,17 @@ void ves::MonteCarloSystem::cellStep(const ves::Cell& cell)
         // orientation move
         if(particle->getType() != ves::Particle::TYPE::OSMOTIC)
         {
-            // rotation = Eigen::AngleAxis<REAL>(dist_orientation(pseudo_engine), Particle::Base::cartesian::Random());
+            Particle::Base::cartesian random_vector = Particle::Base::cartesian::Random();
+
+            // to not oversample with points outside of the unity sphere
+            while(random_vector.squaredNorm() > 1)
+            {
+                random_vector = Particle::Base::cartesian::Random();
+            }
 
             if( 
                 orientation_before = particle->getOrientation(); 
-                particle->try_setOrientation(Eigen::AngleAxis<REAL>(dist_orientation(pseudo_engine), Particle::Base::cartesian::Random()) * particle->getOrientation())
+                particle->try_setOrientation(Eigen::AngleAxis<REAL>(dist_orientation(pseudo_engine), random_vector) * particle->getOrientation())
             )
             {
                 energy_after = cell.potentialOfSingleParticle(*particle);
