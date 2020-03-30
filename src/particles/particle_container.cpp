@@ -503,7 +503,7 @@ void ves::ParticleContainer::setupFromNew()
             const std::size_t guiding_elements_each = Parameters::getInstance().getOption("system.guiding_elements_each").as<std::size_t>();
             const REAL ljsigma = Parameters::getInstance().getOption("system.ljsigma").as<REAL>();
             const REAL gamma = Parameters::getInstance().getOption("system.gamma").as<REAL>();
-            const REAL kappa = Parameters::getInstance().getOption("system.kappa").as<REAL>();
+            // const REAL kappa = Parameters::getInstance().getOption("system.kappa").as<REAL>();
 
             try
             {
@@ -519,7 +519,7 @@ void ves::ParticleContainer::setupFromNew()
                 vesCRITICAL("unable to get box from x|y|z");
             }
 
-            const REAL radius = enhance::nth_root<6>(ljsigma*2)/(2.0*std::sin(gamma)) + kappa;
+            const REAL radius = enhance::nth_root<6>(ljsigma*2)/(2.0*std::sin(gamma));
             vesLOG("construct sphere: center " << box.getCenter().format(ROWFORMAT) << "  | radius " << radius << "  | " <<  mobile+guiding_elements_each);
             ves::SphereGeometry sphere(box.getCenter(), radius, mobile+guiding_elements_each+1);
 
