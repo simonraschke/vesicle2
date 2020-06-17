@@ -211,7 +211,7 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     if args.timestats: print(f"volume took           {time.perf_counter()-t_volume:.4f} seconds")
 
 
-    
+
     """
     calculate the potential energy per particle
     """
@@ -254,11 +254,12 @@ for key in sorted([s for s in trajfile.keys() if s.startswith("snapshot")], key=
     """
     Mean Square Displacement
     """
-    t_msd = time.perf_counter()
-    particledata = particledata.assign(xnopbc=np.nan, ynopbc=np.nan, znopbc=np.nan)
-    particledata[["xnopbc","ynopbc","znopbc"]] = helper.correctForPBC(LAST_DF, particledata, dimensions)
-    particledata["MSD"] = helper.getMSD(origin_positions, particledata[["xnopbc","ynopbc","znopbc"]].values, dimensions)
-    if args.timestats: print(f"MSD took              {time.perf_counter()-t_msd:.4f} seconds")
+    if str(attributes.get("general.ensemble"), encoding="utf8") == "NVT":
+        t_msd = time.perf_counter()
+        particledata = particledata.assign(xnopbc=np.nan, ynopbc=np.nan, znopbc=np.nan)
+        particledata[["xnopbc","ynopbc","znopbc"]] = helper.correctForPBC(LAST_DF, particledata, dimensions)
+        particledata["MSD"] = helper.getMSD(origin_positions, particledata[["xnopbc","ynopbc","znopbc"]].values, dimensions)
+        if args.timestats: print(f"MSD took              {time.perf_counter()-t_msd:.4f} seconds")
     
     
 

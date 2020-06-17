@@ -774,10 +774,10 @@ def getDomainIDofPoint(point, domains):
 
 
 def getStructureDomainID(particledata, domains):
-    return particledata.filter(["shiftx","shifty","shiftz"]).apply(axis=1, func=lambda point: getDomainIDofPoint(point, domains)).astype(np.int8)
+    return particledata.filter(["x","y","z"]).apply(axis=1, func=lambda point: getDomainIDofPoint(point, domains)).astype(np.int8)
 
 def getStructureDomainIDInternal(particledata, domains):
-    return particledata.filter(["shiftx","shifty","shiftz"]).apply(axis=1, func=lambda point: getDomainIDofPoint(point, domains)).astype(np.int8)
+    return particledata.filter(["x","y","z"]).apply(axis=1, func=lambda point: getDomainIDofPoint(point, domains)).astype(np.int8)
 
 
 def _internal_squared_distance(x0, x1, dims):
